@@ -6,7 +6,7 @@
     </a>
 </div>
 
-<div class="card" style="padding: 0; overflow: hidden;">
+<div class="card" style="padding: 0;">
     <table class="data-table">
         <thead>
             <tr>

@@ -113,7 +113,7 @@ $isRA = AuthHelper::isRA();
             Aucune demande en attente de justification.
         </div>
     <?php else: ?>
-        <div class="card" style="padding: 0; overflow: hidden; border-radius: 20px;">
+        <div class="card" style="padding: 0; border-radius: 20px;">
             <table class="data-table">
                 <thead style="background: #F1F4F9;">
                     <tr>
@@ -181,7 +181,7 @@ $isRA = AuthHelper::isRA();
             Aucune demande justifiée pour le moment.
         </div>
     <?php else: ?>
-        <div class="card" style="padding: 0; overflow: hidden; border-radius: 20px;">
+        <div class="card" style="padding: 0; border-radius: 20px;">
             <table class="data-table">
                 <thead style="background: #E8F5E9;">
                     <tr>
@@ -258,7 +258,7 @@ $isRA = AuthHelper::isRA();
             Aucun historique de validation.
         </div>
     <?php else: ?>
-        <div class="card" style="padding: 0; overflow: hidden; border-radius: 20px;">
+        <div class="card" style="padding: 0; border-radius: 20px;">
             <table class="data-table">
                 <thead style="background: #F1F4F9;">
                     <tr>
@@ -325,7 +325,7 @@ $isRA = AuthHelper::isRA();
             Aucune demande rejetée.
         </div>
     <?php else: ?>
-        <div class="card" style="padding: 0; overflow: hidden; border-radius: 20px;">
+        <div class="card" style="padding: 0; border-radius: 20px;">
             <table class="data-table">
                 <thead style="background: #F1F4F9;">
                     <tr>

@@ -148,6 +148,7 @@
             margin-bottom: 24px;
             border: 1px solid var(--md-sys-color-surface-variant);
             transition: box-shadow 0.2s ease-in-out;
+            overflow-x: auto;
         }
 
         .card:hover {
@@ -313,6 +314,97 @@
         .mt-24 {
             margin-top: 24px;
         }
+
+        .grid-2-1 {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+        }
+        
+        .grid-1-1 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        /* Mobile Responsive */
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--md-sys-color-on-surface);
+            padding: 4px;
+            margin-right: 8px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 99;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+        }
+        
+        .sidebar-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .hamburger {
+                display: flex;
+            }
+            .hide-on-mobile {
+                display: none !important;
+            }
+            .top-bar {
+                padding: 0 16px;
+            }
+            .content-area {
+                padding: 16px;
+            }
+            .card {
+                padding: 16px;
+            }
+            
+            /* Responsive Utilities */
+            .grid-2-1, .grid-1-1 {
+                grid-template-columns: 1fr !important;
+            }
+            .flex.gap-16 {
+                flex-wrap: wrap;
+            }
+            .flex.gap-16 > div, .flex.gap-16 > .form-group {
+                min-width: 100%;
+                flex: 1 1 100% !important;
+            }
+            .flex-between {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            .flex-between > div, .flex-between > a {
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .flex-between > a.btn {
+                justify-content: center;
+            }
+        }
     </style>
     <!-- <script>
         window.addEventListener('load',function(){
@@ -322,6 +414,7 @@
 </head>
 
 <body>
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
     <!-- <div class="loading" id="loading" style="position: absolute;height:100vh;width:100vw;background-color:#0061A4;z-index:1000;display:flex;justify-content:center;align-items:center;">
         <div class="spinner-border text-white" role="status">
             <img src="/loader.png" alt="logo">
@@ -378,12 +471,15 @@
         <?php if (isset($_SESSION['user_id'])): ?>
             <header class="top-bar">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <span class="material-symbols-outlined" style="color: var(--md-sys-color-outline);">
+                    <button id="hamburger-menu" class="hamburger">
+                        <span class="material-symbols-outlined">menu</span>
+                    </button>
+                    <span class="material-symbols-outlined hide-on-mobile" style="color: var(--md-sys-color-outline);">
                         <?= \App\Core\AuthHelper::isAdminSpace() ? 'admin_panel_settings' : 'person' ?>
                     </span>
-                    <span
+                    <span class="hide-on-mobile"
                         style="font-weight: 500; font-size: 16px; color: var(--md-sys-color-outline);"><?= \App\Core\AuthHelper::isAdminSpace() ? __('admin') : __('user') ?></span>
-                    <span style="margin: 0 8px; color: var(--md-sys-color-surface-variant);">|</span>
+                    <span class="hide-on-mobile" style="margin: 0 8px; color: var(--md-sys-color-surface-variant);">|</span>
                     <span style="font-weight: 500; font-size: 18px;"><?= $title ?? '' ?></span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 16px;">
@@ -396,11 +492,11 @@
                             style="padding: 4px 8px; font-weight: <?= ($_SESSION['lang'] ?? 'fr') === 'en' ? 'bold' : 'normal' ?>; color: <?= ($_SESSION['lang'] ?? 'fr') === 'en' ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-outline)' ?>;">EN</a>
                     </div>
 
-                    <span
+                    <span class="hide-on-mobile"
                         style="font-size: 14px; color: var(--md-sys-color-outline);"><?= htmlspecialchars(\App\Core\AuthHelper::getUserName()) ?></span>
-                    <a href="/logout" class="btn btn-text btn-danger">
+                    <a href="/logout" class="btn btn-text btn-danger" style="padding: 4px; gap: 4px;">
                         <span class="material-symbols-outlined">logout</span>
-                        <?= __('logout') ?>
+                        <span class="hide-on-mobile"><?= __('logout') ?></span>
                     </a>
                 </div>
             </header>
@@ -436,6 +532,25 @@
             <?= isset($content) ? $content : '' ?>
         </main>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const hamburger = document.getElementById('hamburger-menu');
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+
+            if (hamburger && sidebar && overlay) {
+                hamburger.addEventListener('click', function() {
+                    sidebar.classList.add('open');
+                    overlay.classList.add('active');
+                });
+
+                overlay.addEventListener('click', function() {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('active');
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>

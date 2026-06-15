@@ -2,14 +2,14 @@
 /** @var array $demande @var array $validations **/ 
 ?>
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 32px; align-items: start;">
+<div class="grid-2-1" style="gap: 32px; align-items: start;">
     <div class="card">
         <div class="flex-between" style="margin-bottom: 24px; border-bottom: 1px solid var(--md-sys-color-surface-variant); padding-bottom: 16px;">
             <h2 style="font-size: 22px; color: var(--md-sys-color-primary); margin: 0;"><?= __('request_info') ?></h2>
             <span style="font-size: 14px; color: var(--md-sys-color-outline);"><?= __('ref') ?> BF-<?= date('Y') ?>-<?= str_pad((string)$demande['id'], 4, '0', STR_PAD_LEFT) ?></span>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+        <div class="grid-1-1" style="gap: 24px; margin-bottom: 32px;">
             <div>
                 <label style="font-size: 12px; color: var(--md-sys-color-outline); text-transform: uppercase;"><?= __('requester_upper') ?></label>
                 <div style="font-weight: 500; font-size: 16px;"><?= htmlspecialchars($demande['prenom'] . ' ' . $demande['nom']) ?></div>

@@ -16,7 +16,7 @@
     </a>
 </div>
 
-<div class="card" style="padding: 0; overflow: hidden; border-radius: 20px;">
+<div class="card" style="padding: 0; border-radius: 20px;">
     <table class="data-table">
         <thead style="background: #F1F4F9;">
             <tr>
