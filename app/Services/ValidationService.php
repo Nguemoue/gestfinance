@@ -82,6 +82,17 @@ class ValidationService
             $stmt->execute([$demandeId, $userId, $commentaire, $etape]);
 
             $db->commit();
+
+            // Envoi de la notification après commit
+            try {
+                $validatorName = $user['prenom'] . ' ' . $user['nom'];
+                $catEnum = \App\Enums\CategorieUtilisateur::tryFrom($user['categorie']);
+                $validatorRole = $catEnum ? $catEnum->label() : $user['categorie'];
+                \App\Services\NotificationService::notifyValidation($demandeId, $validatorName, $validatorRole, $newStatus, $commentaire);
+            } catch (\Exception $ne) {
+                error_log("Failed to send validation notification: " . $ne->getMessage());
+            }
+
             return true;
         } catch (\Exception $e) {
             $db->rollBack();
@@ -154,6 +165,17 @@ class ValidationService
             $stmt->execute([$demandeId, $userId, $commentaire, $etape]);
 
             $db->commit();
+
+            // Envoi de la notification après commit
+            try {
+                $validatorName = $user['prenom'] . ' ' . $user['nom'];
+                $catEnum = \App\Enums\CategorieUtilisateur::tryFrom($user['categorie']);
+                $validatorRole = $catEnum ? $catEnum->label() : $user['categorie'];
+                \App\Services\NotificationService::notifyRejection($demandeId, $validatorName, $validatorRole, $commentaire);
+            } catch (\Exception $ne) {
+                error_log("Failed to send rejection notification: " . $ne->getMessage());
+            }
+
             return true;
         } catch (\Exception $e) {
             $db->rollBack();

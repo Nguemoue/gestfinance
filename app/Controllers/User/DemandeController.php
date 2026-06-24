@@ -100,6 +100,10 @@ class DemandeController extends Controller
         ];
 
         if ($this->demandeModel->create($data)) {
+            $demandeId = (int)\App\Core\Database::getInstance()->lastInsertId();
+            if ($statut !== StatutDemande::BROUILLON->value) {
+                \App\Services\NotificationService::notifyCreation($demandeId);
+            }
             $_SESSION['flash_success'] = "La demande a été enregistrée avec succès.";
             $this->redirect('/demandes');
         } else {

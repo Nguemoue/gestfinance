@@ -95,7 +95,7 @@ class ComposerStaticIniteaefd82d4d3f362944d08cc778296a71
     );
 
     public static $prefixLengthsPsr4 = array (
-        'S' => 
+        'S' =>
         array (
             'Symfony\\Polyfill\\Php80\\' => 23,
             'Symfony\\Polyfill\\Mbstring\\' => 26,
@@ -103,85 +103,122 @@ class ComposerStaticIniteaefd82d4d3f362944d08cc778296a71
             'Svg\\' => 4,
             'Sabberworm\\CSS\\' => 15,
         ),
-        'P' => 
+        'P' =>
         array (
             'PhpOption\\' => 10,
+            'PHPMailer\\PHPMailer\\' => 20,
         ),
-        'M' => 
+        'M' =>
         array (
             'Masterminds\\' => 12,
         ),
-        'G' => 
+        'G' =>
         array (
             'GrahamCampbell\\ResultType\\' => 26,
         ),
-        'F' => 
+        'F' =>
         array (
             'FontLib\\' => 8,
         ),
-        'D' => 
+        'D' =>
         array (
             'Dotenv\\' => 7,
             'Dompdf\\' => 7,
         ),
-        'A' => 
+        'A' =>
         array (
             'App\\' => 4,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'Symfony\\Polyfill\\Php80\\' => 
+        'Symfony\\Polyfill\\Php80\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php80',
         ),
-        'Symfony\\Polyfill\\Mbstring\\' => 
+        'Symfony\\Polyfill\\Mbstring\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-mbstring',
         ),
-        'Symfony\\Polyfill\\Ctype\\' => 
+        'Symfony\\Polyfill\\Ctype\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-ctype',
         ),
-        'Svg\\' => 
+        'Svg\\' =>
         array (
             0 => __DIR__ . '/..' . '/dompdf/php-svg-lib/src/Svg',
         ),
-        'Sabberworm\\CSS\\' => 
+        'Sabberworm\\CSS\\' =>
         array (
             0 => __DIR__ . '/..' . '/sabberworm/php-css-parser/src',
         ),
-        'PhpOption\\' => 
+        'PhpOption\\' =>
         array (
             0 => __DIR__ . '/..' . '/phpoption/phpoption/src/PhpOption',
         ),
-        'Masterminds\\' => 
+        'PHPMailer\\PHPMailer\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/phpmailer/phpmailer/src',
+        ),
+        'Masterminds\\' =>
         array (
             0 => __DIR__ . '/..' . '/masterminds/html5/src',
         ),
-        'GrahamCampbell\\ResultType\\' => 
+        'GrahamCampbell\\ResultType\\' =>
         array (
             0 => __DIR__ . '/..' . '/graham-campbell/result-type/src',
         ),
-        'FontLib\\' => 
+        'FontLib\\' =>
         array (
             0 => __DIR__ . '/..' . '/dompdf/php-font-lib/src/FontLib',
         ),
-        'Dotenv\\' => 
+        'Dotenv\\' =>
         array (
             0 => __DIR__ . '/..' . '/vlucas/phpdotenv/src',
         ),
-        'Dompdf\\' => 
+        'Dompdf\\' =>
         array (
             0 => __DIR__ . '/..' . '/dompdf/dompdf/src',
         ),
-        'App\\' => 
+        'App\\' =>
         array (
             0 => __DIR__ . '/../..' . '/app',
         ),
     );
 
     public static $classMap = array (
+        'App\\Controllers\\Admin\\RoleController' => __DIR__ . '/../..' . '/app/Controllers/Admin/RoleController.php',
+        'App\\Controllers\\Admin\\ServiceController' => __DIR__ . '/../..' . '/app/Controllers/Admin/ServiceController.php',
+        'App\\Controllers\\Admin\\UserController' => __DIR__ . '/../..' . '/app/Controllers/Admin/UserController.php',
+        'App\\Controllers\\AuthController' => __DIR__ . '/../..' . '/app/Controllers/AuthController.php',
+        'App\\Controllers\\Controller' => __DIR__ . '/../..' . '/app/Controllers/Controller.php',
+        'App\\Controllers\\HomeController' => __DIR__ . '/../..' . '/app/Controllers/HomeController.php',
+        'App\\Controllers\\ProfileController' => __DIR__ . '/../..' . '/app/Controllers/ProfileController.php',
+        'App\\Controllers\\User\\DemandeController' => __DIR__ . '/../..' . '/app/Controllers/User/DemandeController.php',
+        'App\\Controllers\\User\\FicheController' => __DIR__ . '/../..' . '/app/Controllers/User/FicheController.php',
+        'App\\Controllers\\User\\ValidationController' => __DIR__ . '/../..' . '/app/Controllers/User/ValidationController.php',
+        'App\\Core\\AuthHelper' => __DIR__ . '/../..' . '/app/Core/AuthHelper.php',
+        'App\\Core\\Database' => __DIR__ . '/../..' . '/app/Core/Database.php',
+        'App\\Core\\Router' => __DIR__ . '/../..' . '/app/Core/Router.php',
+        'App\\Core\\Translator' => __DIR__ . '/../..' . '/app/Core/Translator.php',
+        'App\\Enums\\CategorieUtilisateur' => __DIR__ . '/../..' . '/app/Enums/CategorieUtilisateur.php',
+        'App\\Enums\\EtapeValidation' => __DIR__ . '/../..' . '/app/Enums/EtapeValidation.php',
+        'App\\Enums\\RoleTypeEnum' => __DIR__ . '/../..' . '/app/Enums/RoleTypeEnum.php',
+        'App\\Enums\\ServiceTypeEnum' => __DIR__ . '/../..' . '/app/Enums/ServiceTypeEnum.php',
+        'App\\Enums\\SpaceEnum' => __DIR__ . '/../..' . '/app/Enums/SpaceEnum.php',
+        'App\\Enums\\StatutDemande' => __DIR__ . '/../..' . '/app/Enums/StatutDemande.php',
+        'App\\Middleware\\AuthMiddleware' => __DIR__ . '/../..' . '/app/Middleware/AuthMiddleware.php',
+        'App\\Middleware\\CsrfMiddleware' => __DIR__ . '/../..' . '/app/Middleware/CsrfMiddleware.php',
+        'App\\Middleware\\RateLimitMiddleware' => __DIR__ . '/../..' . '/app/Middleware/RateLimitMiddleware.php',
+        'App\\Middleware\\RoleMiddleware' => __DIR__ . '/../..' . '/app/Middleware/RoleMiddleware.php',
+        'App\\Models\\Demande' => __DIR__ . '/../..' . '/app/Models/Demande.php',
+        'App\\Models\\Model' => __DIR__ . '/../..' . '/app/Models/Model.php',
+        'App\\Models\\Role' => __DIR__ . '/../..' . '/app/Models/Role.php',
+        'App\\Models\\Service' => __DIR__ . '/../..' . '/app/Models/Service.php',
+        'App\\Models\\User' => __DIR__ . '/../..' . '/app/Models/User.php',
+        'App\\Models\\Validation' => __DIR__ . '/../..' . '/app/Models/Validation.php',
+        'App\\Services\\PdfService' => __DIR__ . '/../..' . '/app/Services/PdfService.php',
+        'App\\Services\\ValidationService' => __DIR__ . '/../..' . '/app/Services/ValidationService.php',
         'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'Dompdf\\Adapter\\CPDF' => __DIR__ . '/..' . '/dompdf/dompdf/src/Adapter/CPDF.php',
@@ -366,6 +403,13 @@ class ComposerStaticIniteaefd82d4d3f362944d08cc778296a71
         'Masterminds\\HTML5\\Serializer\\OutputRules' => __DIR__ . '/..' . '/masterminds/html5/src/HTML5/Serializer/OutputRules.php',
         'Masterminds\\HTML5\\Serializer\\RulesInterface' => __DIR__ . '/..' . '/masterminds/html5/src/HTML5/Serializer/RulesInterface.php',
         'Masterminds\\HTML5\\Serializer\\Traverser' => __DIR__ . '/..' . '/masterminds/html5/src/HTML5/Serializer/Traverser.php',
+        'PHPMailer\\PHPMailer\\DSNConfigurator' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/DSNConfigurator.php',
+        'PHPMailer\\PHPMailer\\Exception' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/Exception.php',
+        'PHPMailer\\PHPMailer\\OAuth' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/OAuth.php',
+        'PHPMailer\\PHPMailer\\OAuthTokenProvider' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/OAuthTokenProvider.php',
+        'PHPMailer\\PHPMailer\\PHPMailer' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/PHPMailer.php',
+        'PHPMailer\\PHPMailer\\POP3' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/POP3.php',
+        'PHPMailer\\PHPMailer\\SMTP' => __DIR__ . '/..' . '/phpmailer/phpmailer/src/SMTP.php',
         'PhpOption\\LazyOption' => __DIR__ . '/..' . '/phpoption/phpoption/src/PhpOption/LazyOption.php',
         'PhpOption\\None' => __DIR__ . '/..' . '/phpoption/phpoption/src/PhpOption/None.php',
         'PhpOption\\Option' => __DIR__ . '/..' . '/phpoption/phpoption/src/PhpOption/Option.php',

@@ -180,6 +180,11 @@ class ValidationController extends Controller
         $stmt = $db->prepare("UPDATE demandes SET is_justified = 1, updated_at = NOW() WHERE id = ?");
         if ($stmt->execute([$id])) {
             $_SESSION['flash_success'] = "Demande marquée comme justifiée.";
+            try {
+                \App\Services\NotificationService::notifyJustification($id, \App\Core\AuthHelper::getUserName());
+            } catch (\Exception $ne) {
+                error_log("Failed to send justification notification: " . $ne->getMessage());
+            }
         } else {
             $_SESSION['flash_error'] = "Une erreur est survenue.";
         }
@@ -210,6 +215,11 @@ class ValidationController extends Controller
         $stmt = $db->prepare("UPDATE demandes SET is_justified = 0, updated_at = NOW() WHERE id = ?");
         if ($stmt->execute([$id])) {
             $_SESSION['flash_success'] = "Justification annulée avec succès.";
+            try {
+                \App\Services\NotificationService::notifyRollbackJustification($id, \App\Core\AuthHelper::getUserName());
+            } catch (\Exception $ne) {
+                error_log("Failed to send rollback justification notification: " . $ne->getMessage());
+            }
         } else {
             $_SESSION['flash_error'] = "Une erreur est survenue.";
         }
