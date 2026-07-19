@@ -56,8 +56,8 @@ class AuthController extends Controller
             $user = $this->userModel->findByEmail($email);
 
             if ($user && password_verify($password, $user['password_hash'])) {
-                
-                $space = match($user['categorie']){
+
+                $space = match ($user['categorie']) {
                     CategorieUtilisateur::DG->value => SpaceEnum::ADMIN->value,
                     CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value => SpaceEnum::ADMIN->value,
                     CategorieUtilisateur::SUPER_ADMIN->value => SpaceEnum::SUPER_ADMIN->value,

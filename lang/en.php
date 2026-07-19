@@ -122,6 +122,7 @@ return [
     'decision_comment' => 'Decision comment (required)',
     'decision_placeholder' => 'Justify your validation or rejection here...',
     'approve_request' => 'Approve request',
+    'put_at_disposal' => 'Put at disposal',
     'reject_request' => 'Reject',
 
     // Admin

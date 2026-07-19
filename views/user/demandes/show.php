@@ -2,14 +2,14 @@
 /** @var array $demande @var array $validations **/ 
 ?>
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 32px; align-items: start;">
+<div class="grid-2-1" style="gap: 32px; align-items: start;">
     <div class="card">
         <div class="flex-between" style="margin-bottom: 24px; border-bottom: 1px solid var(--md-sys-color-surface-variant); padding-bottom: 16px;">
             <h2 style="font-size: 22px; color: var(--md-sys-color-primary); margin: 0;"><?= __('request_info') ?></h2>
             <span style="font-size: 14px; color: var(--md-sys-color-outline);"><?= __('ref') ?> BF-<?= date('Y') ?>-<?= str_pad((string)$demande['id'], 4, '0', STR_PAD_LEFT) ?></span>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+        <div class="grid-1-1" style="gap: 24px; margin-bottom: 32px;">
             <div>
                 <label style="font-size: 12px; color: var(--md-sys-color-outline); text-transform: uppercase;"><?= __('requester_upper') ?></label>
                 <div style="font-weight: 500; font-size: 16px;"><?= htmlspecialchars($demande['prenom'] . ' ' . $demande['nom']) ?></div>
@@ -73,6 +73,12 @@
                 <span class="material-symbols-outlined">info</span>
                 <span style="font-weight: 700; font-size: 15px;"><?= $status->label() ?></span>
             </div>
+            <?php if (!empty($demande['is_justified'])): ?>
+            <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 12px; background-color: #00695C; color: white; margin-top: 8px;">
+                <span class="material-symbols-outlined">verified</span>
+                <span style="font-weight: 700; font-size: 14px;">Justifiée par le Responsable Administratif</span>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -82,7 +88,7 @@
         <span class="material-symbols-outlined">arrow_back</span>
         <?= __('back_to_list') ?>
     </a>
-    <?php if ($demande['statut'] === 'enregistre'): ?>
+    <?php if ($demande['statut'] === 'mis_a_disposition'): ?>
         <a href="/demandes/<?= $demande['id'] ?>/pdf" target="_blank" class="btn btn-filled">
             <span class="material-symbols-outlined">picture_as_pdf</span>
             <?= __('print_sheet') ?>

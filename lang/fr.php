@@ -122,6 +122,7 @@ return [
     'decision_comment' => 'Commentaire de décision (obligatoire)',
     'decision_placeholder' => 'Justifiez votre validation ou rejet ici...',
     'approve_request' => 'Approuver la demande',
+    'put_at_disposal' => 'Mettre à disposition',
     'reject_request' => 'Rejeter',
 
     // Admin

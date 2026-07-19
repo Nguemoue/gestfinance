@@ -28,20 +28,42 @@ class ValidationController extends Controller
         }
 
         $db = \App\Core\Database::getInstance();
-        $query = "SELECT d.*, u.nom, u.prenom FROM demandes d JOIN users u ON d.user_id = u.id WHERE ";
-        
+        $userId = \App\Core\AuthHelper::getUserId();
+
+        // Demandes en attente de validation (selon rôle)
         if ($userCat === CategorieUtilisateur::RESPONSABLE_DIRECTEUR->value) {
-            $query .= "d.statut = '" . \App\Enums\StatutDemande::SOUMIS->value . "'";
-        } elseif ($userCat === CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value) {
-            $query .= "d.statut = '" . \App\Enums\StatutDemande::VALIDE_DIRECTEUR->value . "'";
+            $query = "SELECT d.*, u.nom, u.prenom 
+                      FROM demandes d 
+                      JOIN users u ON d.user_id = u.id 
+                      JOIN services s ON d.service_id = s.id
+                      WHERE d.statut = :statut AND s.responsable_id = :userId";
+            $stmt = $db->prepare($query);
+            $stmt->execute([
+                'statut' => \App\Enums\StatutDemande::SOUMIS->value,
+                'userId' => $userId
+            ]);
+            $demandes = $stmt->fetchAll();
         } elseif ($userCat === CategorieUtilisateur::DG->value) {
-            $query .= "d.statut = '" . \App\Enums\StatutDemande::VALIDE_RA->value . "'";
+            $query = "SELECT d.*, u.nom, u.prenom 
+                      FROM demandes d 
+                      JOIN users u ON d.user_id = u.id 
+                      WHERE d.statut = :statut";
+            $stmt = $db->prepare($query);
+            $stmt->execute(['statut' => \App\Enums\StatutDemande::VALIDE_DIRECTEUR->value]);
+            $demandes = $stmt->fetchAll();
+        } elseif ($userCat === CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value) {
+            $query = "SELECT d.*, u.nom, u.prenom 
+                      FROM demandes d 
+                      JOIN users u ON d.user_id = u.id 
+                      WHERE d.statut = :statut";
+            $stmt = $db->prepare($query);
+            $stmt->execute(['statut' => \App\Enums\StatutDemande::VALIDE_DG->value]);
+            $demandes = $stmt->fetchAll();
         } else {
-            $query .= "1=0";
+            $demandes = [];
         }
 
-        $demandes = $db->query($query)->fetchAll();
-
+        // Historique des validations effectuées
         $stmt = $db->prepare("
             SELECT d.*, u.nom, u.prenom 
             FROM demandes d 
@@ -51,9 +73,10 @@ class ValidationController extends Controller
             )
             ORDER BY d.created_at DESC
         ");
-        $stmt->execute([\App\Core\AuthHelper::getUserId()]);
+        $stmt->execute([$userId]);
         $demandesPassees = $stmt->fetchAll();
 
+        // Historique des rejets
         $stmt = $db->prepare("
             SELECT d.*, u.nom, u.prenom 
             FROM demandes d 
@@ -63,13 +86,42 @@ class ValidationController extends Controller
             )
             ORDER BY d.created_at DESC
         ");
-        $stmt->execute([\App\Core\AuthHelper::getUserId()]);
+        $stmt->execute([$userId]);
         $demandesRejetees = $stmt->fetchAll();
+
+        // Pour RA seulement : demandes mis_a_disposition divisées par is_justified
+        $demandesAJustifier = [];
+        $demandesJustifiees = [];
+        if ($userCat === CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value) {
+            // À justifier : mis_a_disposition et pas encore justifiées
+            $stmt = $db->prepare("
+                SELECT d.*, u.nom, u.prenom 
+                FROM demandes d 
+                JOIN users u ON d.user_id = u.id 
+                WHERE d.statut = ? AND d.is_justified = 0
+                ORDER BY d.updated_at DESC
+            ");
+            $stmt->execute([\App\Enums\StatutDemande::MIS_A_DISPOSITION->value]);
+            $demandesAJustifier = $stmt->fetchAll();
+
+            // Justifiées : mis_a_disposition et is_justified = 1
+            $stmt = $db->prepare("
+                SELECT d.*, u.nom, u.prenom 
+                FROM demandes d 
+                JOIN users u ON d.user_id = u.id 
+                WHERE d.statut = ? AND d.is_justified = 1
+                ORDER BY d.updated_at DESC
+            ");
+            $stmt->execute([\App\Enums\StatutDemande::MIS_A_DISPOSITION->value]);
+            $demandesJustifiees = $stmt->fetchAll();
+        }
         
         $this->render('user/validation/index', [
-            'demandes' => $demandes,
-            'demandesPassees' => $demandesPassees,
-            'demandesRejetees' => $demandesRejetees,
+            'demandes'           => $demandes,
+            'demandesPassees'    => $demandesPassees,
+            'demandesRejetees'   => $demandesRejetees,
+            'demandesAJustifier' => $demandesAJustifier,
+            'demandesJustifiees' => $demandesJustifiees,
             'title' => 'Validations en attente',
             'breadcrumbs' => [
                 ['label' => 'Accueil', 'url' => '/'],
@@ -84,7 +136,9 @@ class ValidationController extends Controller
         $commentaire = $_POST['commentaire'] ?? '';
         
         if ($this->validationService->validate($id, \App\Core\AuthHelper::getUserId(), $commentaire)) {
-            $_SESSION['flash_success'] = "Validée.";
+            $_SESSION['flash_success'] = "Demande validée avec succès.";
+        } else {
+            $_SESSION['flash_error'] = "Action non autorisée.";
         }
         $this->redirect('/validations');
     }
@@ -94,7 +148,80 @@ class ValidationController extends Controller
         CsrfMiddleware::handle();
         $commentaire = $_POST['commentaire'] ?? '';
         if ($this->validationService->reject($id, \App\Core\AuthHelper::getUserId(), $commentaire)) {
-            $_SESSION['flash_success'] = "Rejetée.";
+            $_SESSION['flash_success'] = "Demande rejetée.";
+        } else {
+            $_SESSION['flash_error'] = "Action non autorisée.";
+        }
+        $this->redirect('/validations');
+    }
+
+    /**
+     * Marque une demande comme justifiée (is_justified = 1). Réservé RA.
+     */
+    public function justify(int $id): void
+    {
+        CsrfMiddleware::handle();
+
+        if (!\App\Core\AuthHelper::isRA()) {
+            $this->redirect('/validations');
+            return;
+        }
+
+        $db = \App\Core\Database::getInstance();
+        // Vérifie que la demande est bien mis_a_disposition et pas encore justifiée
+        $stmt = $db->prepare("SELECT id FROM demandes WHERE id = ? AND statut = ? AND is_justified = 0");
+        $stmt->execute([$id, \App\Enums\StatutDemande::MIS_A_DISPOSITION->value]);
+        if (!$stmt->fetch()) {
+            $_SESSION['flash_error'] = "Action non autorisée sur cette demande.";
+            $this->redirect('/validations');
+            return;
+        }
+
+        $stmt = $db->prepare("UPDATE demandes SET is_justified = 1, updated_at = NOW() WHERE id = ?");
+        if ($stmt->execute([$id])) {
+            $_SESSION['flash_success'] = "Demande marquée comme justifiée.";
+            try {
+                \App\Services\NotificationService::notifyJustification($id, \App\Core\AuthHelper::getUserName());
+            } catch (\Exception $ne) {
+                error_log("Failed to send justification notification: " . $ne->getMessage());
+            }
+        } else {
+            $_SESSION['flash_error'] = "Une erreur est survenue.";
+        }
+        $this->redirect('/validations');
+    }
+
+    /**
+     * Annule la justification d'une demande (is_justified = 0). Réservé RA.
+     */
+    public function rollback(int $id): void
+    {
+        CsrfMiddleware::handle();
+
+        if (!\App\Core\AuthHelper::isRA()) {
+            $this->redirect('/validations');
+            return;
+        }
+
+        $db = \App\Core\Database::getInstance();
+        $stmt = $db->prepare("SELECT id FROM demandes WHERE id = ? AND statut = ? AND is_justified = 1");
+        $stmt->execute([$id, \App\Enums\StatutDemande::MIS_A_DISPOSITION->value]);
+        if (!$stmt->fetch()) {
+            $_SESSION['flash_error'] = "Action non autorisée sur cette demande.";
+            $this->redirect('/validations');
+            return;
+        }
+
+        $stmt = $db->prepare("UPDATE demandes SET is_justified = 0, updated_at = NOW() WHERE id = ?");
+        if ($stmt->execute([$id])) {
+            $_SESSION['flash_success'] = "Justification annulée avec succès.";
+            try {
+                \App\Services\NotificationService::notifyRollbackJustification($id, \App\Core\AuthHelper::getUserName());
+            } catch (\Exception $ne) {
+                error_log("Failed to send rollback justification notification: " . $ne->getMessage());
+            }
+        } else {
+            $_SESSION['flash_error'] = "Une erreur est survenue.";
         }
         $this->redirect('/validations');
     }

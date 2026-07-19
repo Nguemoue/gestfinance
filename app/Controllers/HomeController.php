@@ -33,8 +33,8 @@ class HomeController extends Controller
             SELECT 
                 COUNT(*) as total,
                 SUM(CASE WHEN statut = 'brouillon' THEN 1 ELSE 0 END) as brouillons,
-                SUM(CASE WHEN statut = 'soumis' THEN 1 ELSE 0 END) as en_cours,
-                SUM(CASE WHEN statut = 'enregistre' THEN 1 ELSE 0 END) as finalisees,
+                SUM(CASE WHEN statut IN ('soumis', 'valide_directeur', 'valide_dg') THEN 1 ELSE 0 END) as en_cours,
+                SUM(CASE WHEN statut = 'mis_a_disposition' THEN 1 ELSE 0 END) as finalisees,
                 SUM(CASE WHEN statut = 'rejete' THEN 1 ELSE 0 END) as rejetees
             FROM demandes WHERE user_id = ?
         ");

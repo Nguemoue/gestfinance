@@ -19,9 +19,9 @@ enum EtapeValidation: string
     public function label(): string
     {
         return match ($this) {
-            self::DIRECTEUR => 'Directeur',
-            self::RESPONSABLE_ADMINISTRATIF => 'Responsable Administratif',
-            self::DG => 'Directeur Général',
+            self::DIRECTEUR => 'Validation Chef de Service',
+            self::DG => 'Approbation DG',
+            self::RESPONSABLE_ADMINISTRATIF => 'Mise à disposition',
         };
     }
 }

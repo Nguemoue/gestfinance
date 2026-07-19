@@ -18,7 +18,7 @@ class Translator
     {
         $text = self::$messages[$key] ?? $key;
         foreach ($params as $k => $v) {
-            $text = str_replace(":$k", $v, $text);
+            $text = str_replace(":$k", $v ?: '', $text);
         }
         return $text;
     }

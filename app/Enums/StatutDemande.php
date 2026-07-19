@@ -12,8 +12,8 @@ enum StatutDemande: string
     case BROUILLON = 'brouillon';
     case SOUMIS = 'soumis';
     case VALIDE_DIRECTEUR = 'valide_directeur';
-    case VALIDE_RA = 'valide_ra';
-    case ENREGISTRE = 'enregistre';
+    case VALIDE_DG = 'valide_dg';
+    case MIS_A_DISPOSITION = 'mis_a_disposition';
     case REJETE = 'rejete';
 
     /**
@@ -25,8 +25,8 @@ enum StatutDemande: string
             self::BROUILLON => 'Brouillon',
             self::SOUMIS => 'Soumis',
             self::VALIDE_DIRECTEUR => 'Validé par Service',
-            self::VALIDE_RA => 'Validé par Comptabilité',
-            self::ENREGISTRE => 'Enregistré',
+            self::VALIDE_DG => 'Approuvé par le DG',
+            self::MIS_A_DISPOSITION => 'Mis à disposition',
             self::REJETE => 'Rejeté',
         };
     }
@@ -40,8 +40,8 @@ enum StatutDemande: string
             self::BROUILLON => '#74777F', // Outline color (Grey)
             self::SOUMIS => '#F57C00',    // Orange
             self::VALIDE_DIRECTEUR => '#0288D1', // Light Blue
-            self::VALIDE_RA => '#1565C0',        // Primary Blue
-            self::ENREGISTRE => '#2E7D32',       // Green
+            self::VALIDE_DG => '#1565C0',        // Primary Blue
+            self::MIS_A_DISPOSITION => '#2E7D32',       // Green
             self::REJETE => '#C62828',           // Red
         };
     }

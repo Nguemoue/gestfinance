@@ -13,14 +13,14 @@
         <input type="hidden" name="csrf_token" value="<?= \App\Middleware\CsrfMiddleware::generateToken() ?>">
 
         <!-- Section Demandeur (Lecture seule) -->
-        <div style="background: #F8F9FA; padding: 24px; border-radius: 16px; margin-bottom: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; border: 1px dashed var(--md-sys-color-outline);">
+        <div class="grid-1-1" style="background: #F8F9FA; padding: 24px; border-radius: 16px; margin-bottom: 32px; gap: 24px; border: 1px dashed var(--md-sys-color-outline);">
             <div class="form-group" style="margin-bottom: 0;">
                 <label><?= __('requester') ?></label>
                 <div style="font-weight: 700; font-size: 16px; color: var(--md-sys-color-on-surface);"><?= htmlspecialchars($_SESSION['user_name']) ?></div>
             </div>
             <div class="form-group" style="margin-bottom: 0;">
                 <label><?= __('current_service') ?></label>
-                <div style="font-weight: 700; font-size: 16px; color: var(--md-sys-color-on-surface);"><?= __('service_in_charge') ?></div>
+                <div style="font-weight: 700; font-size: 16px; color: var(--md-sys-color-on-surface);"><?= htmlspecialchars($currentUserDetails['service_nom'] ?? 'Aucun') ?></div>
             </div>
         </div>
 
@@ -28,7 +28,7 @@
             <label for="service_id"><?= __('beneficiary_service') ?></label>
             <select name="service_id" id="service_id" class="form-control" required>
                 <?php foreach ($services as $service): ?>
-                    <option value="<?= $service['id'] ?>" <?= $service['id'] == $_SESSION['service_id'] ? 'selected' : '' ?>>
+                    <option value="<?= $service['id'] ?>" <?= $service['id'] == ($_SESSION['service_id'] ?? '') ? 'selected' : '' ?>>
                         <?= htmlspecialchars($service['libelle']) ?>
                     </option>
                 <?php endforeach; ?>
@@ -38,7 +38,7 @@
 
         <div class="form-group">
             <label for="fonction"><?= __('exact_function') ?></label>
-            <input type="text" name="fonction" id="fonction" class="form-control" placeholder="<?= __('function_placeholder') ?>" required>
+            <input type="text" name="fonction" id="fonction" class="form-control" placeholder="<?= __('function_placeholder') ?>" value="<?= htmlspecialchars($currentUserDetails['role_nom'] ?? '') ?>" required>
         </div>
         
         <div class="form-group">

@@ -46,8 +46,20 @@ class DemandeController extends Controller
      */
     public function create(): void
     {
+        $db = \App\Core\Database::getInstance();
+        $stmt = $db->prepare("
+            SELECT u.*, s.libelle as service_nom, r.libelle as role_nom 
+            FROM users u 
+            LEFT JOIN services s ON u.service_id = s.id 
+            LEFT JOIN roles r ON u.role_id = r.id 
+            WHERE u.id = ?
+        ");
+        $stmt->execute([\App\Core\AuthHelper::getUserId()]);
+        $currentUserDetails = $stmt->fetch() ?: [];
+
         $this->render('user/demandes/create', [
             'services' => (new Service())->all(),
+            'currentUserDetails' => $currentUserDetails,
             'title' => 'Nouvelle Demande',
             'breadcrumbs' => [
                 ['label' => 'Accueil', 'url' => '/'],
@@ -68,9 +80,9 @@ class DemandeController extends Controller
         if (isset($_POST['submit_action']) && $_POST['submit_action'] === 'soumettre') {
             $cat = \App\Core\AuthHelper::getCategory();
             if ($cat === \App\Enums\CategorieUtilisateur::DG->value) {
-                $statut = StatutDemande::ENREGISTRE->value;
+                $statut = StatutDemande::VALIDE_DG->value;
             } elseif ($cat === \App\Enums\CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value) {
-                $statut = StatutDemande::VALIDE_RA->value;
+                $statut = StatutDemande::VALIDE_DIRECTEUR->value;
             } elseif ($cat === \App\Enums\CategorieUtilisateur::RESPONSABLE_DIRECTEUR->value) {
                 $statut = StatutDemande::VALIDE_DIRECTEUR->value;
             } else {
@@ -88,6 +100,10 @@ class DemandeController extends Controller
         ];
 
         if ($this->demandeModel->create($data)) {
+            $demandeId = (int)\App\Core\Database::getInstance()->lastInsertId();
+            if ($statut !== StatutDemande::BROUILLON->value) {
+                \App\Services\NotificationService::notifyCreation($demandeId);
+            }
             $_SESSION['flash_success'] = "La demande a été enregistrée avec succès.";
             $this->redirect('/demandes');
         } else {

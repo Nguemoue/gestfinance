@@ -39,18 +39,21 @@ class ProfileController extends Controller
     public function update(): void
     {
         CsrfMiddleware::handle();
-        
+
         $userId = AuthHelper::getUserId();
         $data = [
-            'nom' => $_POST['nom'],
-            'prenom' => $_POST['prenom'],
-            'email' => $_POST['email'],
+            //'nom' => $_POST['nom'],
+            //'prenom' => $_POST['prenom'],
+            //'email' => $_POST['email'],
         ];
 
         if (!empty($_POST['password'])) {
             $data['password'] = $_POST['password'];
         }
-
+        if (empty($data)) {
+            $_SESSION['flash_success'] = "Aucune modification.";
+            $this->redirect('/profile');
+        }
         if ($this->userModel->update($userId, $data)) {
             $_SESSION['user_name'] = $data['prenom'] . ' ' . $data['nom'];
             $_SESSION['flash_success'] = "Profil mis à jour avec succès.";
