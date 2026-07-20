@@ -74,6 +74,7 @@ $router->post('/validations/{id}/approve', [ValidationController::class, 'approv
 $router->post('/validations/{id}/reject', [ValidationController::class, 'reject']);
 $router->post('/validations/{id}/justify', [ValidationController::class, 'justify']);
 $router->post('/validations/{id}/rollback', [ValidationController::class, 'rollback']);
+$router->get('/etats', [ValidationController::class, 'etats']);
 
 // Fiches PDF
 $router->get('/demandes/{id}/pdf', [FicheController::class, 'generate']);

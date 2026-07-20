@@ -173,7 +173,7 @@ class ValidationController extends Controller
         $stmt->execute([$id, \App\Enums\StatutDemande::MIS_A_DISPOSITION->value]);
         if (!$stmt->fetch()) {
             $_SESSION['flash_error'] = "Action non autorisée sur cette demande.";
-            $this->redirect('/validations');
+            $this->redirect($_SERVER['HTTP_REFERER'] ?? '/validations');
             return;
         }
 
@@ -188,7 +188,7 @@ class ValidationController extends Controller
         } else {
             $_SESSION['flash_error'] = "Une erreur est survenue.";
         }
-        $this->redirect('/validations');
+        $this->redirect($_SERVER['HTTP_REFERER'] ?? '/validations');
     }
 
     /**
@@ -208,7 +208,7 @@ class ValidationController extends Controller
         $stmt->execute([$id, \App\Enums\StatutDemande::MIS_A_DISPOSITION->value]);
         if (!$stmt->fetch()) {
             $_SESSION['flash_error'] = "Action non autorisée sur cette demande.";
-            $this->redirect('/validations');
+            $this->redirect($_SERVER['HTTP_REFERER'] ?? '/validations');
             return;
         }
 
@@ -223,6 +223,46 @@ class ValidationController extends Controller
         } else {
             $_SESSION['flash_error'] = "Une erreur est survenue.";
         }
-        $this->redirect('/validations');
+        $this->redirect($_SERVER['HTTP_REFERER'] ?? '/validations');
+    }
+
+    /**
+     * Liste toutes les demandes mises à disposition par le RA connecté.
+     */
+    public function etats(): void
+    {
+        if (!\App\Core\AuthHelper::isRA()) {
+            $this->redirect('/dashboard');
+            return;
+        }
+
+        $db = \App\Core\Database::getInstance();
+        $userId = \App\Core\AuthHelper::getUserId();
+
+        // Récupérer les demandes validées par cet RA
+        $stmt = $db->prepare("
+            SELECT d.*, u.nom, u.prenom, v.created_at AS date_mise_a_disposition
+            FROM demandes d
+            JOIN users u ON d.user_id = u.id
+            JOIN validations v ON v.demande_id = d.id
+            WHERE v.validateur_id = ?
+              AND v.action = 'validation'
+              AND v.etape = ?
+            ORDER BY v.created_at DESC
+        ");
+        $stmt->execute([
+            $userId,
+            \App\Enums\EtapeValidation::RESPONSABLE_ADMINISTRATIF->value
+        ]);
+        $demandes = $stmt->fetchAll();
+
+        $this->render('user/validation/etats', [
+            'demandes' => $demandes,
+            'title' => __('etats'),
+            'breadcrumbs' => [
+                ['label' => 'Accueil', 'url' => '/'],
+                ['label' => __('etats'), 'url' => '/etats']
+            ]
+        ]);
     }
 }

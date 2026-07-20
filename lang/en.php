@@ -146,4 +146,11 @@ return [
     'new_role' => 'New Role',
     'confirm_delete_role' => 'Delete this role?',
     'no_role_defined' => 'No role defined.',
+    'etats' => 'Reports',
+    'disposal_date' => 'Disposal Date',
+    'ref_number' => 'Voucher Ref',
+    'beneficiary' => 'Beneficiary',
+    'justification_status' => 'Status',
+    'justified' => 'Justified',
+    'not_justified' => 'Not justified',
 ];

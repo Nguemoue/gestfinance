@@ -3,7 +3,7 @@
         'name' => 'kamix/gestfinance',
         'pretty_version' => 'dev-master',
         'version' => 'dev-master',
-        'reference' => 'edc5d2db20cc97792130dd713a84a0abad6b2cb6',
+        'reference' => '9d4013bbb942d89b680cf78c6aef2150d5d81fe6',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -49,7 +49,7 @@
         'kamix/gestfinance' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => 'edc5d2db20cc97792130dd713a84a0abad6b2cb6',
+            'reference' => '9d4013bbb942d89b680cf78c6aef2150d5d81fe6',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

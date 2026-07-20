@@ -36,6 +36,7 @@ return array(
     'App\\Models\\Service' => $baseDir . '/app/Models/Service.php',
     'App\\Models\\User' => $baseDir . '/app/Models/User.php',
     'App\\Models\\Validation' => $baseDir . '/app/Models/Validation.php',
+    'App\\Services\\NotificationService' => $baseDir . '/app/Services/NotificationService.php',
     'App\\Services\\PdfService' => $baseDir . '/app/Services/PdfService.php',
     'App\\Services\\ValidationService' => $baseDir . '/app/Services/ValidationService.php',
     'Attribute' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',

@@ -448,6 +448,13 @@
                     </a>
                 <?php endif; ?>
 
+                <?php if (\App\Core\AuthHelper::isRA()): ?>
+                    <a href="/etats"
+                        class="nav-item <?= str_contains($_SERVER['REQUEST_URI'], '/etats') ? 'active' : '' ?>">
+                        <span class="material-symbols-outlined">assessment</span> <?= __('etats') ?>
+                    </a>
+                <?php endif; ?>
+
                 <?php if (\App\Core\AuthHelper::isSuperAdminSpace()): ?>
                     <div class="nav-section-title"><?= __('administration') ?></div>
                     <a href="/admin/users"

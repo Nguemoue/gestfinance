@@ -146,4 +146,11 @@ return [
     'new_role' => 'Nouveau Rôle',
     'confirm_delete_role' => 'Supprimer ce rôle ?',
     'no_role_defined' => 'Aucun rôle défini.',
+    'etats' => 'Etats',
+    'disposal_date' => 'Date de mise à disposition',
+    'ref_number' => 'N° de pièce',
+    'beneficiary' => 'Bénéficiaire',
+    'justification_status' => 'Statut',
+    'justified' => 'Justifiée',
+    'not_justified' => 'Non justifiée',
 ];
