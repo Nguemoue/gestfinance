@@ -9,6 +9,7 @@ use App\Enums\SpaceEnum;
 use App\Middleware\AuthMiddleware;
 use App\Models\User;
 use App\Middleware\CsrfMiddleware;
+use App\Middleware\RateLimitMiddleware;
 
 /**
  * Contrôleur pour l'authentification.
@@ -49,6 +50,7 @@ class AuthController extends Controller
     {
         try {
             CsrfMiddleware::handle();
+            RateLimitMiddleware::handle();
 
             $email = $_POST['email'] ?? '';
             $password = $_POST['password'] ?? '';
@@ -57,9 +59,11 @@ class AuthController extends Controller
 
             if ($user && password_verify($password, $user['password_hash'])) {
 
-                $space = match ($user['categorie']) {
+                $roleCode = $user['role_code'];
+                $space = match ($roleCode) {
                     CategorieUtilisateur::DG->value => SpaceEnum::ADMIN->value,
                     CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value => SpaceEnum::ADMIN->value,
+                    CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF_ADJOINT->value => SpaceEnum::ADMIN->value,
                     CategorieUtilisateur::SUPER_ADMIN->value => SpaceEnum::SUPER_ADMIN->value,
                     CategorieUtilisateur::RESPONSABLE_DIRECTEUR->value => SpaceEnum::ADMIN->value,
                     default => SpaceEnum::USER->value,
@@ -68,8 +72,9 @@ class AuthController extends Controller
                 session_regenerate_id(true);
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_name'] = $user['prenom'] . ' ' . $user['nom'];
-                $_SESSION['user_category'] = $user['categorie'];
-                $_SESSION['service_id'] = $user['service_id'];
+                $_SESSION['role_code'] = $roleCode;
+                $_SESSION['service_ids'] = \App\Models\UserService::serviceIdsForUser((int) $user['id']);
+                $_SESSION['primary_service_id'] = \App\Models\UserService::primaryServiceIdForUser((int) $user['id']);
                 $_SESSION['user_space'] = $space;
 
                 $_SESSION['flash_success'] = "Bienvenue, {$_SESSION['user_name']} !";
@@ -89,6 +94,7 @@ class AuthController extends Controller
      */
     public function logout(): void
     {
+        CsrfMiddleware::handle();
         session_destroy();
         session_start();
         $_SESSION['flash_success'] = "Vous avez été déconnecté.";

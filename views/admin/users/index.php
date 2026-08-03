@@ -22,7 +22,10 @@
             <tr>
                 <td style="font-weight: 500;"><?= htmlspecialchars($user['prenom'] . ' ' . $user['nom']) ?></td>
                 <td style="color: var(--md-sys-color-on-surface-variant);"><?= htmlspecialchars($user['email']) ?></td>
-                <td><span style="font-size: 13px;"><?= htmlspecialchars($user['categorie']) ?></span></td>
+                <td>
+                    <?php $role = \App\Enums\CategorieUtilisateur::tryFrom((string) $user['role_code']); ?>
+                    <span style="font-size: 13px;"><?= htmlspecialchars($role?->label() ?? $user['role_libelle']) ?></span>
+                </td>
                 <td>
                     <?php if ($user['is_active']): ?>
                         <span style="color: #2E7D32; background: #E8F5E9; padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 700;"><?= __('active') ?></span>
@@ -34,9 +37,10 @@
                     <a href="/admin/users/edit/<?= $user['id'] ?>" class="btn btn-text" title="<?= __('edit') ?>">
                         <span class="material-symbols-outlined">edit</span>
                     </a>
-                    <a href="/admin/users/delete/<?= $user['id'] ?>" class="btn btn-text btn-danger" title="<?= __('delete') ?>" onclick="return confirm('<?= __('confirm_delete_user') ?>')">
-                        <span class="material-symbols-outlined">delete</span>
-                    </a>
+                    <form action="/admin/users/delete/<?= $user['id'] ?>" method="POST" style="display:inline" onsubmit="return confirm('<?= __('confirm_delete_user') ?>')">
+                        <input type="hidden" name="csrf_token" value="<?= \App\Middleware\CsrfMiddleware::generateToken() ?>">
+                        <button type="submit" class="btn btn-text btn-danger" title="<?= __('delete') ?>"><span class="material-symbols-outlined">delete</span></button>
+                    </form>
                 </td>
             </tr>
             <?php endforeach; ?>

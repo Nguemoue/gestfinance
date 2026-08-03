@@ -39,9 +39,15 @@ class AuthHelper
     /**
      * Récupère la catégorie (rôle métier) de l'utilisateur.
      */
-    public static function getCategory(): ?string
+    public static function getRoleCode(): ?string
     {
-        return $_SESSION['user_category'] ?? null;
+        return $_SESSION['role_code'] ?? null;
+    }
+
+    public static function getRoleLabel(): string
+    {
+        $role = CategorieUtilisateur::tryFrom((string) self::getRoleCode());
+        return $role?->label() ?? 'Rôle inconnu';
     }
 
     /**
@@ -55,9 +61,14 @@ class AuthHelper
     /**
      * Récupère l'ID du service de l'utilisateur.
      */
-    public static function getServiceId(): ?int
+    public static function getPrimaryServiceId(): ?int
     {
-        return $_SESSION['service_id'] ?? null;
+        return isset($_SESSION['primary_service_id']) ? (int) $_SESSION['primary_service_id'] : null;
+    }
+
+    public static function getServiceIds(): array
+    {
+        return array_map('intval', $_SESSION['service_ids'] ?? []);
     }
 
     /**
@@ -65,7 +76,7 @@ class AuthHelper
      */
     public static function isAgent(): bool
     {
-        return self::getCategory() === CategorieUtilisateur::AGENT->value;
+        return self::getRoleCode() === CategorieUtilisateur::AGENT->value;
     }
 
     /**
@@ -73,7 +84,7 @@ class AuthHelper
      */
     public static function isDirector(): bool
     {
-        return self::getCategory() === CategorieUtilisateur::RESPONSABLE_DIRECTEUR->value;
+        return self::getRoleCode() === CategorieUtilisateur::RESPONSABLE_DIRECTEUR->value;
     }
 
     /**
@@ -81,7 +92,7 @@ class AuthHelper
      */
     public static function isDG(): bool
     {
-        return self::getCategory() === CategorieUtilisateur::DG->value;
+        return self::getRoleCode() === CategorieUtilisateur::DG->value;
     }
 
     /**
@@ -89,7 +100,20 @@ class AuthHelper
      */
     public static function isRA(): bool
     {
-        return self::getCategory() === CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value;
+        return in_array(self::getRoleCode(), [
+            CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value,
+            CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF_ADJOINT->value,
+        ], true);
+    }
+
+    public static function isRAChief(): bool
+    {
+        return self::getRoleCode() === CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value;
+    }
+
+    public static function isRADeputy(): bool
+    {
+        return self::getRoleCode() === CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF_ADJOINT->value;
     }
 
     /**

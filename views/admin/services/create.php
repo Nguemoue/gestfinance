@@ -13,16 +13,19 @@
         </div>
 
         <div class="form-group">
-            <label for="responsable_id">Responsable du Service</label>
-            <select id="responsable_id" name="responsable_id" class="form-control">
-                <option value="">-- Sélectionner un responsable --</option>
-                <?php 
-                $db = \App\Core\Database::getInstance();
-                $users = $db->query("SELECT id, nom, prenom FROM users WHERE categorie = 'responsable_directeur' ORDER BY nom ASC")->fetchAll();
-                foreach ($users as $u): ?>
-                    <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['prenom'] . ' ' . $u['nom']) ?></option>
+            <label for="responsable_ids">Responsable(s) du Service</label>
+            <select id="responsable_ids" name="responsable_ids[]" class="form-control" multiple size="6">
+                <?php foreach ($users as $u): ?>
+                    <?php $role = \App\Enums\CategorieUtilisateur::tryFrom((string) $u['role_code']); ?>
+                    <option value="<?= (int) $u['id'] ?>">
+                        <?= htmlspecialchars($u['prenom'] . ' ' . $u['nom']) ?>
+                        — <?= htmlspecialchars($role?->label() ?? $u['role_code']) ?>
+                    </option>
                 <?php endforeach; ?>
             </select>
+            <small style="display:block; margin-top:6px; color:var(--md-sys-color-outline);">
+                Maintenez Ctrl pour sélectionner plusieurs responsables, par exemple le chef et le sous-chef.
+            </small>
         </div>
 
         <div class="form-group">

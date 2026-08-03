@@ -28,7 +28,7 @@
             <label for="service_id"><?= __('beneficiary_service') ?></label>
             <select name="service_id" id="service_id" class="form-control" required>
                 <?php foreach ($services as $service): ?>
-                    <option value="<?= $service['id'] ?>" <?= $service['id'] == ($_SESSION['service_id'] ?? '') ? 'selected' : '' ?>>
+                    <option value="<?= $service['id'] ?>" <?= $service['id'] == \App\Core\AuthHelper::getPrimaryServiceId() ? 'selected' : '' ?>>
                         <?= htmlspecialchars($service['libelle']) ?>
                     </option>
                 <?php endforeach; ?>

@@ -4,7 +4,7 @@
             <span class="material-symbols-outlined" style="font-size: 48px;">account_circle</span>
         </div>
         <h1 style="margin: 0; font-size: 24px;"><?= htmlspecialchars($user['prenom'] . ' ' . $user['nom']) ?></h1>
-        <p style="color: var(--md-sys-color-outline); margin-top: 4px;"><?= ucfirst($user['categorie']) ?> - <?= htmlspecialchars($service['libelle'] ?? 'Aucun service') ?></p>
+        <p style="color: var(--md-sys-color-outline); margin-top: 4px;"><?= htmlspecialchars(\App\Core\AuthHelper::getRoleLabel()) ?> - <?= htmlspecialchars($service['libelle'] ?? 'Aucun service') ?></p>
     </div>
 
     <form action="/profile" method="POST">

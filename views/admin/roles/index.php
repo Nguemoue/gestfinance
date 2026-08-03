@@ -140,7 +140,10 @@
                 
                 echo '<div class="node-actions">';
                 echo '<a href="/admin/roles/edit/' . $role['id'] . '" style="color: inherit;" title="' . __('edit') . '"><span class="material-symbols-outlined" style="font-size: 16px;">edit</span></a>';
-                echo '<a href="/admin/roles/delete/' . $role['id'] . '" style="color: #C62828;" title="' . __('delete') . '" onclick="return confirm(\'' . __('confirm_delete_role') . '\')"><span class="material-symbols-outlined" style="font-size: 16px;">delete</span></a>';
+                echo '<form action="/admin/roles/delete/' . (int) $role['id'] . '" method="POST" style="display:inline" onsubmit="return confirm(\'' . htmlspecialchars(__('confirm_delete_role'), ENT_QUOTES) . '\')">';
+                echo '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(\App\Middleware\CsrfMiddleware::generateToken(), ENT_QUOTES) . '">';
+                echo '<button type="submit" class="btn btn-text btn-danger" title="' . htmlspecialchars(__('delete'), ENT_QUOTES) . '"><span class="material-symbols-outlined" style="font-size:16px">delete</span></button>';
+                echo '</form>';
                 echo '</div>';
                 
                 echo '</div>';

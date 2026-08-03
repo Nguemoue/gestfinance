@@ -501,10 +501,13 @@
 
                     <span class="hide-on-mobile"
                         style="font-size: 14px; color: var(--md-sys-color-outline);"><?= htmlspecialchars(\App\Core\AuthHelper::getUserName()) ?></span>
-                    <a href="/logout" class="btn btn-text btn-danger" style="padding: 4px; gap: 4px;">
+                    <form action="/logout" method="POST" style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="<?= \App\Middleware\CsrfMiddleware::generateToken() ?>">
+                        <button type="submit" class="btn btn-text btn-danger" style="padding: 4px; gap: 4px;">
                         <span class="material-symbols-outlined">logout</span>
                         <span class="hide-on-mobile"><?= __('logout') ?></span>
-                    </a>
+                        </button>
+                    </form>
                 </div>
             </header>
         <?php endif; ?>

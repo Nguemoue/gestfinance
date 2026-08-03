@@ -27,7 +27,8 @@ class CsrfMiddleware
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $token = $_POST['csrf_token'] ?? '';
-            if (empty($token) || $token !== ($_SESSION['csrf_token'] ?? '')) {
+            $sessionToken = (string) ($_SESSION['csrf_token'] ?? '');
+            if ($token === '' || $sessionToken === '' || !hash_equals($sessionToken, (string) $token)) {
                 http_response_code(403);
                 die("Erreur CSRF : Token invalide ou manquant.");
             }

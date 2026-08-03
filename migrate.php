@@ -5,84 +5,156 @@ declare(strict_types=1);
 require_once __DIR__ . '/vendor/autoload.php';
 
 use App\Core\Database;
-
-/**
- * Script de migration pour mettre à jour la base de données.
- * Utilise la configuration définie dans App\Core\Database.
- */
-
-$migrationsDir = __DIR__ . '/migrations';
-
-try {
-    $pdo = Database::getInstance();
-    echo "Connexion à la base de données réussie.\n";
-} catch (Exception $e) {
-    die("Erreur de connexion à la base de données : " . $e->getMessage() . "\n");
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
 }
 
-// 1. Créer la table des migrations si elle n'existe pas
+$command = $argv[1] ?? 'migrate';
+$allowedCommands = ['migrate', 'status'];
+if (!in_array($command, $allowedCommands, true)) {
+    fwrite(STDERR, "Usage : php migrate.php [migrate|status]\n");
+    exit(1);
+}
+
+$migrationsDirectory = __DIR__ . '/migrations';
+if (!is_dir($migrationsDirectory)) {
+    fwrite(STDERR, "Dossier de migrations introuvable : {$migrationsDirectory}\n");
+    exit(1);
+}
+
+$migrationFiles = array_values(array_filter(
+    scandir($migrationsDirectory) ?: [],
+    static fn(string $file): bool => preg_match('/^\d{3}_[a-z0-9_]+\.sql$/', $file) === 1
+));
+sort($migrationFiles, SORT_STRING);
+
 try {
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS migrations (
+    $database = Database::getInstance();
+    initialiseMigrationRepository($database);
+    $applied = loadAppliedMigrations($database);
+    backfillAndVerifyChecksums($database, $migrationsDirectory, $migrationFiles, $applied);
+    $applied = loadAppliedMigrations($database);
+
+    if ($command === 'status') {
+        printStatus($migrationFiles, $applied);
+        exit(0);
+    }
+
+    $pending = array_values(array_filter(
+        $migrationFiles,
+        static fn(string $file): bool => !isset($applied[$file])
+    ));
+
+    if ($pending === []) {
+        echo "Aucune nouvelle migration à appliquer.\n";
+        exit(0);
+    }
+
+    $batch = (int) $database->query('SELECT COALESCE(MAX(batch), 0) + 1 FROM migrations')->fetchColumn();
+    foreach ($pending as $file) {
+        applyMigration($database, $migrationsDirectory, $file, $batch);
+    }
+
+    echo count($pending) . " migration(s) appliquée(s), batch {$batch}.\n";
+} catch (Throwable $exception) {
+    fwrite(STDERR, "Échec des migrations : {$exception->getMessage()}\n");
+    exit(1);
+}
+
+function initialiseMigrationRepository(PDO $database): void
+{
+    $database->exec(
+        'CREATE TABLE IF NOT EXISTS migrations (
             id INT AUTO_INCREMENT PRIMARY KEY,
             migration_name VARCHAR(255) NOT NULL UNIQUE,
+            checksum CHAR(64) NULL,
+            batch INT NOT NULL DEFAULT 1,
             applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB;
-    ");
-    echo "Table des migrations vérifiée/créée.\n";
-} catch (PDOException $e) {
-    die("Échec de la création de la table des migrations : " . $e->getMessage() . "\n");
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+
+    $columns = $database->query('SHOW COLUMNS FROM migrations')->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('checksum', $columns, true)) {
+        $database->exec('ALTER TABLE migrations ADD COLUMN checksum CHAR(64) NULL AFTER migration_name');
+    }
+    if (!in_array('batch', $columns, true)) {
+        $database->exec('ALTER TABLE migrations ADD COLUMN batch INT NOT NULL DEFAULT 1 AFTER checksum');
+    }
 }
 
-// 2. Récupérer les migrations déjà appliquées
-$stmt = $pdo->query("SELECT migration_name FROM migrations");
-$appliedMigrations = $stmt->fetchAll(PDO::FETCH_COLUMN);
+function loadAppliedMigrations(PDO $database): array
+{
+    $rows = $database->query(
+        'SELECT migration_name, checksum, batch, applied_at FROM migrations ORDER BY migration_name'
+    )->fetchAll();
 
-// 3. Récupérer les fichiers de migration disponibles
-$migrationFiles = [];
-if (is_dir($migrationsDir)) {
-    $files = scandir($migrationsDir);
+    $applied = [];
+    foreach ($rows as $row) {
+        $applied[$row['migration_name']] = $row;
+    }
+    return $applied;
+}
+
+function backfillAndVerifyChecksums(
+    PDO $database,
+    string $directory,
+    array $files,
+    array $applied
+): void {
+    $update = $database->prepare('UPDATE migrations SET checksum = ? WHERE migration_name = ?');
     foreach ($files as $file) {
-        if (preg_match('/^\d{3}_.+\.sql$/', $file)) { // Correspond à des fichiers comme 001_create_tables.sql
-            $migrationFiles[] = $file;
+        if (!isset($applied[$file])) {
+            continue;
         }
-    }
-    sort($migrationFiles); // S'assurer que les migrations sont appliquées dans l'ordre
-} else {
-    die("Dossier des migrations non trouvé : " . $migrationsDir . "\n");
-}
-
-// 4. Appliquer les nouvelles migrations
-$newMigrationsCount = 0;
-foreach ($migrationFiles as $migrationFile) {
-    if (!in_array($migrationFile, $appliedMigrations)) {
-        echo "Application de la migration : " . $migrationFile . "\n";
-        $sql = file_get_contents($migrationsDir . '/' . $migrationFile);
-
-        if ($sql === false) {
-            die("Impossible de lire le fichier de migration : " . $migrationFile . "\n");
+        $checksum = hash_file('sha256', $directory . '/' . $file);
+        if ($checksum === false) {
+            throw new RuntimeException("Impossible de calculer l'empreinte de {$file}.");
         }
-
-        try {
-            // Note: MySQL ne supporte pas les transactions sur le DDL (CREATE, ALTER, etc.)
-            // Ces instructions provoquent un commit implicite.
-            $pdo->exec($sql);
-
-            $stmt = $pdo->prepare("INSERT INTO migrations (migration_name) VALUES (?)");
-            $stmt->execute([$migrationFile]);
-
-            echo "Migration appliquée avec succès : " . $migrationFile . "\n";
-            $newMigrationsCount++;
-        } catch (PDOException $e) {
-            die("Échec de l'application de la migration " . $migrationFile . " : " . $e->getMessage() . "\n");
+        $storedChecksum = $applied[$file]['checksum'];
+        if ($storedChecksum === null || $storedChecksum === '') {
+            $update->execute([$checksum, $file]);
+            continue;
+        }
+        if (!hash_equals($storedChecksum, $checksum)) {
+            throw new RuntimeException(
+                "La migration déjà appliquée {$file} a été modifiée. Créez une nouvelle migration."
+            );
         }
     }
 }
 
-if ($newMigrationsCount === 0) {
-    echo "Aucune nouvelle migration à appliquer.\n";
-} else {
-    echo "Appliqué " . $newMigrationsCount . " nouvelle(s) migration(s).\n";
+function applyMigration(PDO $database, string $directory, string $file, int $batch): void
+{
+    $path = $directory . '/' . $file;
+    $sql = file_get_contents($path);
+    $checksum = hash_file('sha256', $path);
+    if ($sql === false || $checksum === false) {
+        throw new RuntimeException("Impossible de lire la migration {$file}.");
+    }
+
+    echo "Application : {$file}\n";
+    $database->exec($sql);
+    $statement = $database->prepare(
+        'INSERT INTO migrations (migration_name, checksum, batch) VALUES (?, ?, ?)'
+    );
+    $statement->execute([$file, $checksum, $batch]);
 }
 
-echo "Processus de migration terminé.\n";
+function printStatus(array $files, array $applied): void
+{
+    echo str_pad('Migration', 52) . str_pad('État', 12) . "Batch\n";
+    echo str_repeat('-', 72) . "\n";
+    foreach ($files as $file) {
+        $isApplied = isset($applied[$file]);
+        echo str_pad($file, 52)
+            . str_pad($isApplied ? 'appliquée' : 'en attente', 12)
+            . ($isApplied ? (string) $applied[$file]['batch'] : '-')
+            . "\n";
+    }
+
+    $missingFiles = array_diff(array_keys($applied), $files);
+    foreach ($missingFiles as $file) {
+        echo str_pad($file, 52) . str_pad('fichier absent', 12) . $applied[$file]['batch'] . "\n";
+    }
+}

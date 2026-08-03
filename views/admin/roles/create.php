@@ -20,7 +20,11 @@
 
         <div class="form-group">
             <label for="code">Code métier</label>
-            <input type="text" id="code" name="code" class="form-control" placeholder="ex: DIR_TECH" required>
+            <select id="code" name="code" class="form-control" required>
+                <?php foreach (\App\Enums\CategorieUtilisateur::cases() as $roleCode): ?>
+                    <option value="<?= $roleCode->value ?>"><?= htmlspecialchars($roleCode->label()) ?> — <?= $roleCode->value ?></option>
+                <?php endforeach; ?>
+            </select>
         </div>
 
         <div class="form-group">

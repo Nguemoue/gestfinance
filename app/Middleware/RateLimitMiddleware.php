@@ -19,7 +19,7 @@ class RateLimitMiddleware
         
         $tempDir = sys_get_temp_dir() . '/gestfinance_cache';
         if (!is_dir($tempDir)) {
-            mkdir($tempDir, 0777, true);
+            mkdir($tempDir, 0700, true);
         }
 
         $file = $tempDir . '/' . $key;
@@ -36,7 +36,7 @@ class RateLimitMiddleware
             $data['count']++;
         }
 
-        file_put_contents($file, json_encode($data));
+        file_put_contents($file, json_encode($data), LOCK_EX);
 
         if ($data['count'] > self::MAX_REQUESTS) {
             http_response_code(429);

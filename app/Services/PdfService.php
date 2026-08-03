@@ -16,7 +16,8 @@ class PdfService
         $options = new Options();
         $options->set('defaultFont', 'Helvetica');
         $options->set('isHtml5ParserEnabled', true);
-        $options->set('isRemoteEnabled', true);
+        $options->set('isRemoteEnabled', false);
+        $options->set('chroot', dirname(__DIR__, 2) . '/public');
 
         $this->dompdf = new Dompdf($options);
     }
@@ -24,10 +25,15 @@ class PdfService
     /**
      * Génère un PDF à partir d'un contenu HTML.
      */
-    public function generate(string $html, string $filename = 'document.pdf', bool $stream = true): ?string
+    public function generate(
+        string $html,
+        string $filename = 'document.pdf',
+        bool $stream = true,
+        string $orientation = 'portrait'
+    ): ?string
     {
         $this->dompdf->loadHtml($html);
-        $this->dompdf->setPaper('A4', 'portrait');
+        $this->dompdf->setPaper('A4', $orientation);
         $this->dompdf->render();
 
         if ($stream) {

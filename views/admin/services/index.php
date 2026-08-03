@@ -22,10 +22,10 @@
             <tr>
                 <td style="font-weight: 500;"><?= htmlspecialchars($service['libelle']) ?></td>
                 <td>
-                    <?php if ($service['resp_nom']): ?>
+                    <?php if ($service['responsables_noms']): ?>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <span class="material-symbols-outlined" style="font-size: 18px; color: var(--md-sys-color-primary);">account_circle</span>
-                            <span style="font-size: 14px;"><?= htmlspecialchars($service['resp_prenom'] . ' ' . $service['resp_nom']) ?></span>
+                            <span style="font-size: 14px;"><?= htmlspecialchars($service['responsables_noms']) ?></span>
                         </div>
                     <?php else: ?>
                         <span style="color: var(--md-sys-color-outline); font-style: italic; font-size: 13px;"><?= __('unassigned') ?></span>
@@ -43,9 +43,10 @@
                     <a href="/admin/services/edit/<?= $service['id'] ?>" class="btn btn-text" title="<?= __('edit') ?>">
                         <span class="material-symbols-outlined">edit</span>
                     </a>
-                    <a href="/admin/services/delete/<?= $service['id'] ?>" class="btn btn-text btn-danger" title="<?= __('delete') ?>" onclick="return confirm('<?= __('confirm_delete_service') ?>')">
-                        <span class="material-symbols-outlined">delete</span>
-                    </a>
+                    <form action="/admin/services/delete/<?= $service['id'] ?>" method="POST" style="display:inline" onsubmit="return confirm('<?= __('confirm_delete_service') ?>')">
+                        <input type="hidden" name="csrf_token" value="<?= \App\Middleware\CsrfMiddleware::generateToken() ?>">
+                        <button type="submit" class="btn btn-text btn-danger" title="<?= __('delete') ?>"><span class="material-symbols-outlined">delete</span></button>
+                    </form>
                 </td>
             </tr>
             <?php endforeach; ?>

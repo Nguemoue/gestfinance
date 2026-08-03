@@ -16,10 +16,26 @@ class User extends Model
      */
     public function findByEmail(string $email): ?array
     {
-        $stmt = $this->db->prepare("SELECT * FROM {$this->table} WHERE email = ? AND is_active = 1");
+        $stmt = $this->db->prepare(
+            "SELECT u.*, r.code AS role_code
+             FROM {$this->table} u
+             JOIN roles r ON r.id = u.role_id AND r.is_active = 1
+             WHERE u.email = ? AND u.is_active = 1"
+        );
         $stmt->execute([$email]);
         $result = $stmt->fetch();
         return $result ?: null;
+    }
+
+    public function allWithRoles(): array
+    {
+        $stmt = $this->db->query(
+            "SELECT u.*, r.code AS role_code, r.libelle AS role_libelle
+             FROM {$this->table} u
+             JOIN roles r ON r.id = u.role_id
+             ORDER BY u.created_at DESC"
+        );
+        return $stmt->fetchAll();
     }
 
     /**
@@ -37,6 +53,20 @@ class User extends Model
 
         $stmt = $this->db->prepare("INSERT INTO {$this->table} ({$columns}) VALUES ({$placeholders})");
         return $stmt->execute(array_values($data));
+    }
+
+    public function countActiveByRoleCode(string $roleCode, ?int $exceptUserId = null): int
+    {
+        $sql = "SELECT COUNT(*) FROM {$this->table} u JOIN roles r ON r.id = u.role_id
+                WHERE u.is_active = 1 AND r.code = ?";
+        $params = [$roleCode];
+        if ($exceptUserId !== null) {
+            $sql .= ' AND u.id <> ?';
+            $params[] = $exceptUserId;
+        }
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Services\ValidationService;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\CsrfMiddleware;
 use App\Enums\CategorieUtilisateur;
+use App\Services\PdfService;
 
 class ValidationController extends Controller
 {
@@ -22,46 +23,50 @@ class ValidationController extends Controller
 
     public function index(): void
     {
-        $userCat = \App\Core\AuthHelper::getCategory();
-        if ($userCat === CategorieUtilisateur::AGENT->value) {
+        $roleCode = \App\Core\AuthHelper::getRoleCode();
+        $role = CategorieUtilisateur::tryFrom($roleCode);
+        if (!$role || (!$role->canManageService() && $role !== CategorieUtilisateur::SUPER_ADMIN)) {
             $this->redirect('/');
+            return;
         }
 
         $db = \App\Core\Database::getInstance();
         $userId = \App\Core\AuthHelper::getUserId();
 
-        // Demandes en attente de validation (selon rôle)
-        if ($userCat === CategorieUtilisateur::RESPONSABLE_DIRECTEUR->value) {
-            $query = "SELECT d.*, u.nom, u.prenom 
-                      FROM demandes d 
-                      JOIN users u ON d.user_id = u.id 
-                      JOIN services s ON d.service_id = s.id
-                      WHERE d.statut = :statut AND s.responsable_id = :userId";
-            $stmt = $db->prepare($query);
-            $stmt->execute([
-                'statut' => \App\Enums\StatutDemande::SOUMIS->value,
-                'userId' => $userId
-            ]);
-            $demandes = $stmt->fetchAll();
-        } elseif ($userCat === CategorieUtilisateur::DG->value) {
-            $query = "SELECT d.*, u.nom, u.prenom 
-                      FROM demandes d 
-                      JOIN users u ON d.user_id = u.id 
-                      WHERE d.statut = :statut";
-            $stmt = $db->prepare($query);
-            $stmt->execute(['statut' => \App\Enums\StatutDemande::VALIDE_DIRECTEUR->value]);
-            $demandes = $stmt->fetchAll();
-        } elseif ($userCat === CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value) {
-            $query = "SELECT d.*, u.nom, u.prenom 
-                      FROM demandes d 
-                      JOIN users u ON d.user_id = u.id 
-                      WHERE d.statut = :statut";
-            $stmt = $db->prepare($query);
-            $stmt->execute(['statut' => \App\Enums\StatutDemande::VALIDE_DG->value]);
-            $demandes = $stmt->fetchAll();
-        } else {
-            $demandes = [];
-        }
+        $isDg = $roleCode === CategorieUtilisateur::DG->value;
+        $isAdministrativeManager = in_array($roleCode, [
+            CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value,
+            CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF_ADJOINT->value,
+        ], true);
+
+        // Une même personne peut cumuler les demandes de tous les services dont elle
+        // est responsable et celles liées à son rôle global (DG ou RA).
+        $query = "SELECT DISTINCT d.*, u.nom, u.prenom
+                  FROM demandes d
+                  JOIN users u ON d.user_id = u.id
+                  WHERE (
+                      d.statut = :soumis
+                      AND EXISTS (
+                          SELECT 1
+                          FROM user_services us
+                          WHERE us.service_id = d.service_id
+                            AND us.user_id = :userId
+                            AND us.is_responsable = 1
+                      )
+                  )
+                  OR (:isDg = 1 AND d.statut = :valideDirecteur)
+                  OR (:isRa = 1 AND d.statut = :valideDg)
+                  ORDER BY d.created_at DESC";
+        $stmt = $db->prepare($query);
+        $stmt->execute([
+            'soumis' => \App\Enums\StatutDemande::SOUMIS->value,
+            'userId' => $userId,
+            'isDg' => $isDg ? 1 : 0,
+            'valideDirecteur' => \App\Enums\StatutDemande::VALIDE_DIRECTEUR->value,
+            'isRa' => $isAdministrativeManager ? 1 : 0,
+            'valideDg' => \App\Enums\StatutDemande::VALIDE_DG->value,
+        ]);
+        $demandes = $stmt->fetchAll();
 
         // Historique des validations effectuées
         $stmt = $db->prepare("
@@ -92,7 +97,7 @@ class ValidationController extends Controller
         // Pour RA seulement : demandes mis_a_disposition divisées par is_justified
         $demandesAJustifier = [];
         $demandesJustifiees = [];
-        if ($userCat === CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value) {
+        if (\App\Core\AuthHelper::isRA()) {
             // À justifier : mis_a_disposition et pas encore justifiées
             $stmt = $db->prepare("
                 SELECT d.*, u.nom, u.prenom 
@@ -237,22 +242,13 @@ class ValidationController extends Controller
         }
 
         $db = \App\Core\Database::getInstance();
-        $userId = \App\Core\AuthHelper::getUserId();
-
-        // Récupérer les demandes validées par cet RA
-        $stmt = $db->prepare("
-            SELECT d.*, u.nom, u.prenom, v.created_at AS date_mise_a_disposition
-            FROM demandes d
-            JOIN users u ON d.user_id = u.id
-            JOIN validations v ON v.demande_id = d.id
-            WHERE v.validateur_id = ?
-              AND v.action = 'validation'
-              AND v.etape = ?
-            ORDER BY v.created_at DESC
+        // Registre partagé entre les deux responsables administratifs.
+        $stmt = $db->prepare($this->etatsQuery() . "
+            ORDER BY COALESCE(d.date_mise_a_disposition, v.created_at) DESC
         ");
         $stmt->execute([
-            $userId,
-            \App\Enums\EtapeValidation::RESPONSABLE_ADMINISTRATIF->value
+            \App\Enums\EtapeValidation::RESPONSABLE_ADMINISTRATIF->value,
+            \App\Enums\StatutDemande::MIS_A_DISPOSITION->value,
         ]);
         $demandes = $stmt->fetchAll();
 
@@ -264,5 +260,96 @@ class ValidationController extends Controller
                 ['label' => __('etats'), 'url' => '/etats']
             ]
         ]);
+    }
+
+    public function exportEtatsPdf(): void
+    {
+        if (!\App\Core\AuthHelper::isRA()) {
+            http_response_code(403);
+            echo 'Accès non autorisé.';
+            return;
+        }
+
+        [$filtersSql, $filtersParams, $filters] = $this->etatsFilters($_GET);
+        $stmt = \App\Core\Database::getInstance()->prepare(
+            $this->etatsQuery() . $filtersSql . "
+            ORDER BY COALESCE(d.date_mise_a_disposition, v.created_at) DESC"
+        );
+        $stmt->execute([
+            \App\Enums\EtapeValidation::RESPONSABLE_ADMINISTRATIF->value,
+            \App\Enums\StatutDemande::MIS_A_DISPOSITION->value,
+            ...$filtersParams,
+        ]);
+        $demandes = $stmt->fetchAll();
+        $generatedAt = new \DateTimeImmutable();
+
+        ob_start();
+        include __DIR__ . '/../../../views/fiche/etats.php';
+        $html = (string) ob_get_clean();
+
+        (new PdfService())->generate(
+            $html,
+            'Etats_filtres_' . $generatedAt->format('Ymd_His') . '.pdf',
+            true,
+            'landscape'
+        );
+    }
+
+    private function etatsQuery(): string
+    {
+        return "
+            SELECT d.*, u.nom, u.prenom, s.libelle AS service_nom,
+                   COALESCE(d.date_mise_a_disposition, v.created_at) AS date_mise_a_disposition
+            FROM demandes d
+            JOIN users u ON d.user_id = u.id
+            JOIN services s ON s.id = d.service_id
+            LEFT JOIN (
+                SELECT demande_id, MAX(created_at) AS created_at
+                FROM validations
+                WHERE action = 'validation' AND etape = ?
+                GROUP BY demande_id
+            ) v ON v.demande_id = d.id
+            WHERE d.statut = ?
+        ";
+    }
+
+    private function etatsFilters(array $input): array
+    {
+        $definitions = [
+            'search' => ["CONCAT_WS(' ', d.reference_etat, u.prenom, u.nom, s.libelle, d.objet, d.montant) LIKE ?", true],
+            'reference' => ['d.reference_etat LIKE ?', true],
+            'beneficiaire' => ["CONCAT_WS(' ', d.beneficiaire_etat, u.prenom, u.nom) LIKE ?", true],
+            'service' => ['s.libelle LIKE ?', true],
+            'objet' => ['d.objet LIKE ?', true],
+            'montant_min' => ['d.montant >= ?', false],
+            'montant_max' => ['d.montant <= ?', false],
+            'date_from' => ['DATE(COALESCE(d.date_mise_a_disposition, v.created_at)) >= ?', false],
+            'date_to' => ['DATE(COALESCE(d.date_mise_a_disposition, v.created_at)) <= ?', false],
+            'is_justified' => ['d.is_justified = ?', false],
+        ];
+        $sql = '';
+        $params = [];
+        $filters = [];
+
+        foreach ($definitions as $key => [$condition, $contains]) {
+            $value = trim((string) ($input[$key] ?? ''));
+            if ($value === '' || ($key === 'is_justified' && !in_array($value, ['0', '1'], true))) {
+                continue;
+            }
+            if (in_array($key, ['montant_min', 'montant_max'], true) && !is_numeric($value)) {
+                continue;
+            }
+            if (in_array($key, ['date_from', 'date_to'], true)) {
+                $date = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
+                if (!$date || $date->format('Y-m-d') !== $value) {
+                    continue;
+                }
+            }
+            $sql .= ' AND ' . $condition;
+            $params[] = $contains ? '%' . $value . '%' : $value;
+            $filters[$key] = $value;
+        }
+
+        return [$sql, $params, $filters];
     }
 }

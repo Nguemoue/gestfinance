@@ -46,7 +46,14 @@ GestFinance est une application web de gestion des besoins financiers développ�
    - Créez la base de données spécifiée dans votre `.env`.
 
 4. **Migration de la base de données** :
-   Importez le fichier `migrations/001_create_tables.sql` dans votre base de données.
+   ```bash
+   composer migrate
+   ```
+   Cette commande applique dans l'ordre toutes les migrations encore en attente.
+   Pour consulter leur état :
+   ```bash
+   composer migrate:status
+   ```
 
 5. **Lancer l'application** :
    Utilisez le serveur intégré de PHP pour le développement :
@@ -58,8 +65,12 @@ GestFinance est une application web de gestion des besoins financiers développ�
 
 Vous pouvez insérer un administrateur par défaut via SQL :
 ```sql
-INSERT INTO users (nom, prenom, email, password_hash, categorie, is_active) 
-VALUES ('Admin', 'Gest', 'admin@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'dg', 1);
+INSERT INTO users (nom, prenom, email, password_hash, role_id, is_active)
+SELECT 'Admin', 'Gest', 'admin@example.com',
+       '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+       id, 1
+FROM roles
+WHERE code = 'dg';
 -- Mot de passe : password
 ```
 
@@ -71,3 +82,39 @@ VALUES ('Admin', 'Gest', 'admin@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKo
 - `routes/` : Définition des routes web.
 - `views/` : Templates HTML et Layouts.
 - `migrations/` : Scripts SQL de création des tables.
+
+## Convention des migrations
+
+- Toute évolution de structure ou reprise de données doit être créée dans
+  `migrations/` sous la forme `NNN_description_en_snake_case.sql`.
+- Les migrations appliquées ne doivent jamais être modifiées : leur empreinte
+  SHA-256 est contrôlée par le runner.
+- `php migrate.php migrate` est l'unique commande autorisée pour modifier le
+  schéma. Les anciens scripts `update_db.php` et `update_db_v2.php` ont été
+  remplacés respectivement par les migrations `002` et `003`.
+- `php migrate.php status` affiche les migrations appliquées, en attente ou
+  enregistrées mais absentes du dépôt.
+
+## Modèle d'autorisation
+
+`roles.code` est la source de vérité pour les autorisations. Les seuls codes actifs
+sont ceux de `CategorieUtilisateur` : `agent`, `responsable_directeur`, `dg`,
+`responsable_administratif`, `responsable_administratif_adjoint` et `super_admin`.
+`users.role_id` est une clé étrangère obligatoire vers ce référentiel. La table
+`users` ne contient plus de copie du code rôle.
+
+Un utilisateur peut appartenir à plusieurs services via `user_services`. Les
+colonnes `is_primary` et `is_responsable` indiquent respectivement son service
+principal et les services qu'il dirige. L'administration financière comprend
+exactement deux fonctions distinctes : un `responsable_administratif` (chef) et
+un `responsable_administratif_adjoint` (sous-chef). Un seul compte actif est
+autorisé pour chacune de ces fonctions ; tous deux peuvent assurer la mise à
+disposition et travaillent dans le même registre d'états.
+
+La relation des responsables de service repose exclusivement sur
+`user_services.is_responsable`. La table `services` ne contient plus de colonne
+`responsable_id`, ce qui permet d'affecter plusieurs responsables à un service.
+
+De la même manière, la table `users` ne contient plus de colonne `service_id`.
+Tous les rattachements sont stockés dans `user_services` et le service principal
+d'un utilisateur est celui dont `is_primary = 1`.

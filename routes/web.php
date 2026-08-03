@@ -29,7 +29,7 @@ $router->get('/lang/{locale}', function($locale) {
 // Auth System
 $router->get('/login', [AuthController::class, 'showLogin']);
 $router->post('/login', [AuthController::class, 'login']);
-$router->get('/logout', [AuthController::class, 'logout']);
+$router->post('/logout', [AuthController::class, 'logout']);
 
 // Profile
 $router->get('/profile', [ProfileController::class, 'index']);
@@ -44,7 +44,7 @@ $router->get('/admin/users/create', [UserController::class, 'create']);
 $router->post('/admin/users/create', [UserController::class, 'store']);
 $router->get('/admin/users/edit/{id}', [UserController::class, 'edit']);
 $router->post('/admin/users/edit/{id}', [UserController::class, 'update']);
-$router->get('/admin/users/delete/{id}', [UserController::class, 'delete']);
+$router->post('/admin/users/delete/{id}', [UserController::class, 'delete']);
 
 // Admin - Services
 $router->get('/admin/services', [ServiceController::class, 'index']);
@@ -52,7 +52,7 @@ $router->get('/admin/services/create', [ServiceController::class, 'create']);
 $router->post('/admin/services/create', [ServiceController::class, 'store']);
 $router->get('/admin/services/edit/{id}', [ServiceController::class, 'edit']);
 $router->post('/admin/services/edit/{id}', [ServiceController::class, 'update']);
-$router->get('/admin/services/delete/{id}', [ServiceController::class, 'delete']);
+$router->post('/admin/services/delete/{id}', [ServiceController::class, 'delete']);
 
 // Admin - Roles
 $router->get('/admin/roles', [RoleController::class, 'index']);
@@ -60,7 +60,7 @@ $router->get('/admin/roles/create', [RoleController::class, 'create']);
 $router->post('/admin/roles/create', [RoleController::class, 'store']);
 $router->get('/admin/roles/edit/{id}', [RoleController::class, 'edit']);
 $router->post('/admin/roles/edit/{id}', [RoleController::class, 'update']);
-$router->get('/admin/roles/delete/{id}', [RoleController::class, 'delete']);
+$router->post('/admin/roles/delete/{id}', [RoleController::class, 'delete']);
 
 // User - Demandes
 $router->get('/demandes', [DemandeController::class, 'index']);
@@ -75,6 +75,7 @@ $router->post('/validations/{id}/reject', [ValidationController::class, 'reject'
 $router->post('/validations/{id}/justify', [ValidationController::class, 'justify']);
 $router->post('/validations/{id}/rollback', [ValidationController::class, 'rollback']);
 $router->get('/etats', [ValidationController::class, 'etats']);
+$router->get('/etats/export-pdf', [ValidationController::class, 'exportEtatsPdf']);
 
 // Fiches PDF
 $router->get('/demandes/{id}/pdf', [FicheController::class, 'generate']);

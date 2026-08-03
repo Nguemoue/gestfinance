@@ -8,6 +8,7 @@ use App\Controllers\Controller;
 use App\Services\PdfService;
 use App\Core\Database;
 use App\Middleware\AuthMiddleware;
+use App\Services\AccessService;
 
 class FicheController extends Controller
 {
@@ -34,6 +35,10 @@ class FicheController extends Controller
 
         if (!$demande) {
             die("Demande non trouvée.");
+        }
+        if (!AccessService::canViewDemande($demande)) {
+            http_response_code(403);
+            die("Accès non autorisé.");
         }
 
         // 2. Récupérer les validations

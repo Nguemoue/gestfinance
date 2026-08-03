@@ -119,15 +119,26 @@ class NotificationService
         if ($demande['statut'] === StatutDemande::SOUMIS->value) {
             // Notification au Responsable de Service
             $stmtService = $db->prepare("
-                SELECT u.email, u.nom, u.prenom 
-                FROM services s 
-                JOIN users u ON s.responsable_id = u.id 
-                WHERE s.id = ? AND u.is_active = 1
+                SELECT DISTINCT u.email, u.nom, u.prenom
+                FROM user_services us
+                JOIN users u ON u.id = us.user_id
+                JOIN roles r ON r.id = u.role_id
+                WHERE us.service_id = ?
+                  AND us.is_responsable = 1
+                  AND u.is_active = 1
+                  AND r.is_active = 1
+                  AND r.code IN (
+                      'responsable_directeur',
+                      'responsable_administratif',
+                      'responsable_administratif_adjoint',
+                      'dg'
+                  )
+                ORDER BY u.nom, u.prenom
             ");
             $stmtService->execute([$demande['service_id']]);
-            $responsible = $stmtService->fetch();
+            $responsibles = $stmtService->fetchAll();
 
-            if ($responsible) {
+            foreach ($responsibles as $responsible) {
                 $respName = $responsible['prenom'] . ' ' . $responsible['nom'];
                 $respSubject = "Nouvelle demande de besoin financier à valider - BF-{$year}-{$refId}";
                 $respLink = $appUrl . "/validations";
@@ -156,8 +167,7 @@ class NotificationService
             );
         } elseif ($demande['statut'] === StatutDemande::VALIDE_DG->value) {
             // Notification au RA
-            self::notifyGroup(
-                CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value,
+            self::notifyAdministrativeManagers(
                 "Demande de besoin financier approuvée en attente de traitement - BF-{$year}-{$refId}",
                 "Demande en attente de mise à disposition",
                 "Bonjour,",
@@ -229,8 +239,7 @@ class NotificationService
                 $year
             );
         } elseif ($newStatus === StatutDemande::VALIDE_DG->value) {
-            self::notifyGroup(
-                CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value,
+            self::notifyAdministrativeManagers(
                 "Demande de besoin financier approuvée en attente de traitement - BF-{$year}-{$refId}",
                 "Demande en attente de mise à disposition",
                 "Bonjour,",
@@ -383,7 +392,12 @@ class NotificationService
     private static function notifyGroup(string $category, string $subject, string $subtitle, string $salutation, string $message, string $detailsBox, string $link, string $year): void
     {
         $db = Database::getInstance();
-        $stmt = $db->prepare("SELECT email, nom, prenom FROM users WHERE categorie = ? AND is_active = 1");
+        $stmt = $db->prepare(
+            "SELECT u.email, u.nom, u.prenom
+             FROM users u
+             JOIN roles r ON r.id = u.role_id
+             WHERE r.code = ? AND u.is_active = 1 AND r.is_active = 1"
+        );
         $stmt->execute([$category]);
         $users = $stmt->fetchAll();
 
@@ -399,6 +413,32 @@ class NotificationService
                 $year
             );
             self::sendEmail($user['email'], $name, $subject, $html);
+        }
+    }
+
+    private static function notifyAdministrativeManagers(
+        string $subject,
+        string $subtitle,
+        string $salutation,
+        string $message,
+        string $detailsBox,
+        string $link,
+        string $year
+    ): void {
+        foreach ([
+            CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value,
+            CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF_ADJOINT->value,
+        ] as $category) {
+            self::notifyGroup(
+                $category,
+                $subject,
+                $subtitle,
+                $salutation,
+                $message,
+                $detailsBox,
+                $link,
+                $year
+            );
         }
     }
 

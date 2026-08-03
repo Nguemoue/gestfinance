@@ -23,7 +23,13 @@
 
         <div class="form-group">
             <label for="code">Code métier</label>
-            <input type="text" id="code" name="code" class="form-control" value="<?= htmlspecialchars($role['code']) ?>" required>
+            <select id="code" name="code" class="form-control" required>
+                <?php foreach (\App\Enums\CategorieUtilisateur::cases() as $roleCode): ?>
+                    <option value="<?= $roleCode->value ?>" <?= $role['code'] === $roleCode->value ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($roleCode->label()) ?> — <?= $roleCode->value ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
         </div>
 
         <div class="form-group">

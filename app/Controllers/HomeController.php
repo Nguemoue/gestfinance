@@ -15,7 +15,6 @@ class HomeController extends Controller
         AuthMiddleware::handle();
         
         $space = AuthHelper::getSpace();
-        $category = AuthHelper::getCategory();
         $userId = AuthHelper::getUserId();
         
         $demandeModel = new Demande();
@@ -48,14 +47,15 @@ class HomeController extends Controller
 
         // 3. Statistiques de Service (Responsable uniquement)
         if (AuthHelper::isDirector()) {
-            $serviceId = AuthHelper::getServiceId();
             $stmt = $db->prepare("
                 SELECT 
                     COUNT(*) as total,
                     SUM(CASE WHEN statut = 'soumis' THEN 1 ELSE 0 END) as en_attente_validation
-                FROM demandes WHERE service_id = ?
+                FROM demandes d
+                JOIN user_services us ON us.service_id = d.service_id
+                WHERE us.user_id = ? AND us.is_responsable = 1
             ");
-            $stmt->execute([$serviceId]);
+            $stmt->execute([$userId]);
             $data['service_stats'] = $stmt->fetch();
         }
 

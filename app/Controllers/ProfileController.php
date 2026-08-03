@@ -6,7 +6,7 @@ namespace App\Controllers;
 
 use App\Core\AuthHelper;
 use App\Models\User;
-use App\Models\Service;
+use App\Models\UserService;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\CsrfMiddleware;
 
@@ -23,7 +23,7 @@ class ProfileController extends Controller
     public function index(): void
     {
         $user = $this->userModel->find(AuthHelper::getUserId());
-        $service = (new Service())->find($user['service_id'] ?? 0);
+        $service = UserService::primaryServiceForUser((int) $user['id']);
 
         $this->render('user/profile', [
             'user' => $user,
@@ -55,7 +55,6 @@ class ProfileController extends Controller
             $this->redirect('/profile');
         }
         if ($this->userModel->update($userId, $data)) {
-            $_SESSION['user_name'] = $data['prenom'] . ' ' . $data['nom'];
             $_SESSION['flash_success'] = "Profil mis à jour avec succès.";
         } else {
             $_SESSION['flash_error'] = "Erreur lors de la mise à jour.";

@@ -25,11 +25,10 @@
 
         <div class="flex gap-16">
             <div class="form-group" style="flex: 1;">
-                <label for="service_id">Service rattaché</label>
-                <select id="service_id" name="service_id" class="form-control">
-                    <option value="">-- Aucun --</option>
+                <label for="service_ids">Services rattachés</label>
+                <select id="service_ids" name="service_ids[]" class="form-control" multiple size="5">
                     <?php foreach ($services as $service): ?>
-                        <option value="<?= $service['id'] ?>" <?= $user['service_id'] == $service['id'] ? 'selected' : '' ?>>
+                        <option value="<?= $service['id'] ?>" <?= in_array((int) $service['id'], $selectedServiceIds, true) ? 'selected' : '' ?>>
                             <?= htmlspecialchars($service['libelle']) ?>
                         </option>
                     <?php endforeach; ?>
@@ -50,14 +49,8 @@
 
         <div class="flex gap-16">
             <div class="form-group" style="flex: 1;">
-                <label for="categorie">Catégorie utilisateur</label>
-                <select id="categorie" name="categorie" class="form-control" required>
-                    <?php foreach ($categories as $cat): ?>
-                        <option value="<?= $cat->value ?>" <?= $user['categorie'] === $cat->value ? 'selected' : '' ?>>
-                            <?= $cat->label() ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+                <label>Catégorie utilisateur</label>
+                <p style="margin: 8px 0; color: var(--md-sys-color-outline);">Déduite automatiquement du rôle sélectionné.</p>
             </div>
             <div class="form-group" style="flex: 1;">
                 <label for="niveau_validation">Niveau de validation</label>

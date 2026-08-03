@@ -15,9 +15,9 @@ class RoleMiddleware
     {
         AuthMiddleware::handle();
 
-        $userCategory = \App\Core\AuthHelper::getCategory();
+        $roleCode = \App\Core\AuthHelper::getRoleCode();
 
-        if (!in_array($userCategory, $allowedCategories)) {
+        if (!in_array($roleCode, $allowedCategories, true)) {
             http_response_code(403);
             die("Accès interdit : vous n'avez pas les droits nécessaires.");
         }

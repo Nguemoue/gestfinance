@@ -29,23 +29,22 @@ try {
     $infServiceId = $db->query("SELECT id FROM services WHERE code = '" . ServiceTypeEnum::INF->value . "'")->fetchColumn();
     $dgServiceId = $db->query("SELECT id FROM services WHERE code = '" . ServiceTypeEnum::DG->value . "'")->fetchColumn();
 
-    // 2. Insertion des Rôles via l'Enum RoleType
+    // 2. Insertion des rôles depuis l'unique enum d'autorisation
     echo "Insertion des rôles...\n";
     $stmtRole = $db->prepare("INSERT IGNORE INTO roles (libelle, code, description) VALUES (?, ?, ?)");
     
-    foreach (\App\Enums\RoleTypeEnum::cases() as $role) {
+    foreach (CategorieUtilisateur::cases() as $role) {
         $stmtRole->execute([
             $role->label(),
             $role->value,
-            $role->description()
+            'Rôle canonique GestFinance'
         ]);
     }
     
-    $adminRoleId = $db->query("SELECT id FROM roles WHERE code = '" . \App\Enums\RoleTypeEnum::ADMIN->value . "'")->fetchColumn();
-    $agentRoleId = $db->query("SELECT id FROM roles WHERE code = '" . \App\Enums\RoleTypeEnum::AGENT->value . "'")->fetchColumn();
+    $roleIds = $db->query("SELECT code, id FROM roles")->fetchAll(PDO::FETCH_KEY_PAIR);
 
     // 3. Préparation de l'insertion des utilisateurs
-    $insertUserSql = "INSERT INTO users (nom, prenom, email, password_hash, service_id, role_id, categorie, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    $insertUserSql = "INSERT INTO users (nom, prenom, email, password_hash, role_id, is_active) VALUES (?, ?, ?, ?, ?, ?)";
     $stmtInsertUser = $db->prepare($insertUserSql);
     
     $checkUserStmt = $db->prepare("SELECT id FROM users WHERE email = ?");
@@ -65,9 +64,7 @@ try {
             'Prenom', 
             $superAdminEmail, 
             $password, 
-            $dgServiceId, 
-            $adminRoleId, 
-            CategorieUtilisateur::SUPER_ADMIN->value, 
+            $roleIds[CategorieUtilisateur::SUPER_ADMIN->value],
             1
         ]);
         echo "✅ Compte Super Admin créé : $superAdminEmail / admin123\n";
@@ -87,9 +84,7 @@ try {
             'Directeur', 
             $dgEmail, 
             $password, 
-            $dgServiceId, 
-            $adminRoleId, 
-            CategorieUtilisateur::DG->value, 
+            $roleIds[CategorieUtilisateur::DG->value],
             1
         ]);
         echo "✅ Compte DG créé : $dgEmail / admin123\n";
@@ -108,14 +103,27 @@ try {
             'Responsable', 
             $raEmail, 
             $password, 
-            $comptaServiceId, 
-            $adminRoleId, 
-            CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value, 
+            $roleIds[CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF->value],
             1
         ]);
         echo "✅ Compte Responsable Comptabilité créé : $raEmail / admin123\n";
     } else {
         echo "ℹ️ L'utilisateur Responsable Comptabilité existe déjà.\n";
+    }
+
+    // Deux responsables administratifs actifs sont prévus par le workflow.
+    $ra2Email = 'ra2@gestfinance.com';
+    $checkUserStmt->execute([$ra2Email]);
+    if (!$checkUserStmt->fetch()) {
+        $stmtInsertUser->execute([
+            'ADMINISTRATION',
+            'Responsable 2',
+            $ra2Email,
+            $password,
+            $roleIds[CategorieUtilisateur::RESPONSABLE_ADMINISTRATIF_ADJOINT->value],
+            1
+        ]);
+        echo "✅ Responsable Administratif Adjoint créé : $ra2Email / admin123\n";
     }
 
     // 6. Insertion d'un Agent de test
@@ -129,14 +137,27 @@ try {
             'Agent', 
             $agentEmail, 
             $password, 
-            $infServiceId, 
-            $agentRoleId, 
-            CategorieUtilisateur::AGENT->value, 
+            $roleIds[CategorieUtilisateur::AGENT->value],
             1
         ]);
         echo "✅ Compte Agent créé : $agentEmail / admin123\n";
     } else {
         echo "ℹ️ L'utilisateur agent existe déjà.\n";
+    }
+
+    $assignPrimaryService = $db->prepare(
+        "INSERT INTO user_services (user_id, service_id, is_primary, is_responsable)
+         SELECT id, ?, 1, 0 FROM users WHERE email = ?
+         ON DUPLICATE KEY UPDATE is_primary = 1"
+    );
+    foreach ([
+        $superAdminEmail => $dgServiceId,
+        $dgEmail => $dgServiceId,
+        $raEmail => $comptaServiceId,
+        $ra2Email => $comptaServiceId,
+        $agentEmail => $infServiceId,
+    ] as $email => $serviceId) {
+        $assignPrimaryService->execute([$serviceId, $email]);
     }
 
     echo "--- Seeding terminé ---\n";

@@ -22,6 +22,20 @@ class Role extends Model
         return $stmt->fetchAll();
     }
 
+    public function allCanonical(): array
+    {
+        $codes = array_map(
+            static fn(\App\Enums\CategorieUtilisateur $role): string => $role->value,
+            \App\Enums\CategorieUtilisateur::cases()
+        );
+        $placeholders = implode(',', array_fill(0, count($codes), '?'));
+        $stmt = $this->db->prepare(
+            "SELECT * FROM {$this->table} WHERE is_active = 1 AND code IN ($placeholders) ORDER BY libelle"
+        );
+        $stmt->execute($codes);
+        return $stmt->fetchAll();
+    }
+
     public function create(array $data): bool
     {
         $columns = implode(', ', array_keys($data));

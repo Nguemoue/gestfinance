@@ -2,11 +2,6 @@
 
 declare(strict_types=1);
 
-// Activation des erreurs pour le débogage
-ini_set('display_errors', '1');
-ini_set('display_startup_errors', '1');
-error_reporting(E_ALL);
-
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Core\Router;
@@ -18,6 +13,11 @@ try {
         $dotenv = Dotenv::createImmutable(dirname(__DIR__));
         $dotenv->load();
     }
+
+    $debug = filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOL);
+    ini_set('display_errors', $debug ? '1' : '0');
+    ini_set('display_startup_errors', $debug ? '1' : '0');
+    error_reporting(E_ALL);
 
     // Démarrage de la session
     if (session_status() === PHP_SESSION_NONE) {
@@ -40,8 +40,9 @@ try {
 
     // Résolution de la route
     $router->resolve();
-} catch (\Exception $e) {
-    echo "<h1>Erreur Système</h1>";
-    echo "<p>" . $e->getMessage() . "</p>";
-    echo "<pre>" . $e->getTraceAsString() . "</pre>";
+} catch (\Throwable $e) {
+    error_log((string) $e);
+    http_response_code(500);
+    echo "<h1>Erreur système</h1>";
+    echo $debug ? '<pre>' . htmlspecialchars((string) $e) . '</pre>' : '<p>Une erreur interne est survenue.</p>';
 }
